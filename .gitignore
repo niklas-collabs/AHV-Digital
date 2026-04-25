@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+client/dist/
+server/dist/
+shared/dist/
+*.tsbuildinfo
+
+# Local data (DB, Uploads, Backups) — kommt ab Phase 1.2
+data/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude-Sessions (lokaler Memory-Ordner pro Maschine)
+.claude/

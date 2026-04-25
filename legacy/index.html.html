@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AHV Arbeitszettel</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AHV">
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3248;
+  --text:#e8eaf6; --muted:#7986cb; --accent:#4a6cf7; --accent2:#7c3aed;
+  --green:#22c55e; --red:#ef4444; --warn:#f59e0b; --blue:#1a3a6b;
+}
+[data-theme="light"] {
+  --bg:#f0f2f8; --surface:#fff; --surface2:#e8eaf6; --border:#c5cae9;
+  --text:#1a237e; --muted:#5c6bc0; --accent:#3949ab; --accent2:#6a1b9a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:70px;}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;width:100%;outline:none;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+button{cursor:pointer;font-family:inherit;border:none;border-radius:8px;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#fff;padding:12px 20px;font-size:14px;font-weight:600;width:100%;}
+.btn-primary:active{opacity:.8;}
+.btn-secondary{background:var(--surface2);color:var(--text);padding:10px 16px;font-size:13px;border:1px solid var(--border);}
+.btn-danger{background:#7f1d1d;color:#fca5a5;padding:8px 12px;font-size:12px;}
+.card-btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:12px;border-radius:10px;font-size:13px;text-align:left;width:100%;}
+.card-btn:active{background:var(--accent);color:#fff;}
+.icon-btn{background:transparent;color:var(--muted);font-size:20px;padding:6px 10px;}
+
+/* Header */
+.header{background:var(--blue);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
+.header h1{font-size:14px;font-weight:700;color:#fff;flex:1;}
+.header p{font-size:11px;color:#90caf9;}
+.header-btns{display:flex;gap:4px;}
+.header-logo{max-height:44px;max-width:80px;object-fit:contain;}
+.header-logo-ph{font-size:28px;width:44px;text-align:center;}
+
+/* Tabs */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:68px;z-index:99;}
+.tab{flex:1;min-width:80px;padding:11px 8px;font-size:12px;font-weight:600;text-align:center;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* Pages */
+.page{display:none;padding:14px;max-width:700px;margin:0 auto;}
+.page.active{display:block;}
+
+/* Cards */
+.auftrag-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.auftrag-card:active{border-color:var(--accent);}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.card-title{font-size:14px;font-weight:600;flex:1;}
+.card-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
+.badge{background:var(--accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+.badge-warn{background:var(--warn);color:#000;}
+.badge-green{background:var(--green);color:#000;}
+.list-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.list-empty .emoji{font-size:36px;margin-bottom:10px;}
+
+/* Suche */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{padding-left:36px;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted);}
+.search-highlight{background:#fef08a;color:#000;border-radius:2px;}
+
+/* Form */
+.form-wrap{padding:14px;max-width:700px;margin:0 auto;}
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.form-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.form-row{margin-bottom:10px;}
+.form-row label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;}
+
+/* Material Zeilen */
+.mat-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.mat-row input{flex:2;}
+.mat-row input.sm{flex:1;}
+.mat-row select{flex:1;}
+.mat-del{background:transparent;color:var(--red);font-size:18px;padding:4px 6px;flex-shrink:0;}
+
+/* MA Zeilen */
+.ma-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.ma-row input{flex:2;}
+.ma-row input.sm{flex:1;}
+.ma-row select{flex:1.5;}
+.ma-del{background:transparent;color:var(--red);font-size:18px;padding:4px 6px;flex-shrink:0;}
+
+/* Pauschalen Chips */
+.chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.chip{padding:5px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);}
+.chip:active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.chip.lohn{border-color:var(--accent2);}
+
+/* Unterschrift */
+#sigCanvas{background:#fff;border-radius:8px;display:block;touch-action:none;width:100%;height:130px;}
+
+/* Foto Grid */
+.foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.foto-thumb{position:relative;aspect-ratio:1;background:var(--surface2);border-radius:8px;overflow:hidden;}
+.foto-thumb img{width:100%;height:100%;object-fit:cover;}
+.foto-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.foto-add{aspect-ratio:1;background:var(--surface2);border:2px dashed var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--muted);gap:4px;}
+.foto-add span{font-size:24px;}
+
+/* Wartung */
+.wartung-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.wartung-status{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:6px;}
+.status-ok{background:#14532d;color:#86efac;}
+.status-bald{background:#713f12;color:#fde68a;}
+.status-faellig{background:#7f1d1d;color:#fca5a5;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:20px;}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.modal-btns{display:flex;gap:8px;margin-top:14px;}
+.admin-list{margin-bottom:10px;}
+.admin-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);}
+.admin-item-name{font-size:13px;font-weight:600;}
+.admin-item-price{font-size:12px;color:var(--muted);margin-left:auto;}
+
+/* Status */
+.status-msg{font-size:12px;padding:8px 12px;border-radius:8px;display:none;}
+.status-msg.success{background:#14532d;color:#86efac;display:block;}
+.status-msg.error{background:#7f1d1d;color:#fca5a5;display:block;}
+.status-msg.info{background:#1e3a5f;color:#93c5fd;display:block;}
+
+/* Bottom Bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 14px 12px;display:flex;gap:8px;z-index:100;}
+
+/* Kunde Auswahl */
+.kunde-type-btns{display:flex;gap:6px;margin-bottom:10px;}
+.kunde-type-btn{flex:1;padding:8px;font-size:12px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);}
+.kunde-type-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* History */
+.history-item{padding:8px 0;border-bottom:1px solid var(--border);}
+.history-item-top{display:flex;justify-content:space-between;align-items:center;}
+.history-item-title{font-size:13px;font-weight:600;}
+.history-item-date{font-size:11px;color:var(--muted);}
+.history-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* Typ Selector */
+.typ-btns{display:flex;gap:6px;margin-bottom:12px;}
+.typ-btn{flex:1;padding:8px 4px;font-size:11px;font-weight:600;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);}
+.typ-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+/* Teilleistung */
+.tl-item{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.tl-info{font-size:12px;color:var(--muted);}
+
+@media(max-width:480px){
+  .form-grid-2{grid-template-columns:1fr;}
+  .form-grid-3{grid-template-columns:1fr 1fr;}
+  .modal-box{border-radius:16px 16px 0 0;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div id="headerLogoWrap" onclick="openSettings('logo')" style="cursor:pointer;"></div>
+  <div style="flex:1;">
+    <h1 id="headerFirmaName">Adolph Hochmuth Versorgungstechnik</h1>
+    <p id="headerDate"></p>
+  </div>
+  <div class="header-btns">
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="icon-btn" onclick="openSettings('start')" title="Einstellungen">⚙️</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-entwuerfe" onclick="showTab('entwuerfe')">📝 Entwürfe</div>
+  <div class="tab" id="tab-archiv" onclick="showTab('archiv')">✅ Archiv</div>
+  <div class="tab" id="tab-kunden" onclick="showTab('kunden')">👥 Kunden</div>
+  <div class="tab" id="tab-wartung" onclick="showTab('wartung')">⏰ Wartung <span id="wartungBadge" style="display:none;background:var(--warn);color:#000;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;margin-left:2px;"></span></div>
+</div>
+
+<!-- ENTWÜRFE -->
+<div class="page active" id="page-entwuerfe">
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="searchEntwuerfe" placeholder="Suchen..." oninput="filterList('entwuerfe')"></div>
+  <div id="entwuerfe-list"></div>
+</div>
+
+<!-- ARCHIV -->
+<div class="page" id="page-archiv">
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="searchArchiv" placeholder="Suchen..." oninput="filterList('archiv')"></div>
+  <div id="archiv-list"></div>
+</div>
+
+<!-- KUNDEN -->
+<div class="page" id="page-kunden">
+  <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="searchKunden" placeholder="Suchen..." oninput="filterKunden()"></div>
+  <div id="kunden-list"></div>
+</div>
+
+<!-- WARTUNG -->
+<div class="page" id="page-wartung">
+  <div id="wartung-list"></div>
+  <button class="btn-primary" style="margin-top:10px;" onclick="openWartungForm(null)">＋ Neuer Wartungsplan</button>
+</div>
+
+<!-- FORM -->
+<div class="page" id="page-form" style="display:none;padding:0;">
+  <div class="form-wrap" id="form-wrap">
+
+    <!-- Typ -->
+    <div class="form-section">
+      <div class="typ-btns">
+        <button class="typ-btn active" id="typ-arbeitszettel" onclick="setTyp('arbeitszettel')">📋 Arbeitszettel</button>
+        <button class="typ-btn" id="typ-angebot" onclick="setTyp('angebot')">💶 Angebot</button>
+        <button class="typ-btn" id="typ-lieferschein" onclick="setTyp('lieferschein')">📦 Lieferschein</button>
+      </div>
+      <div class="form-row"><label>TITEL / AUFTRAGSNUMMER</label><input type="text" id="titelInput" placeholder="z.B. Heizungswartung Musterstr. 5"></div>
+      <div class="form-row"><label>DATUM</label><input type="date" id="datumInput"></div>
+    </div>
+
+    <!-- Kunde -->
+    <div class="form-section">
+      <div class="form-section-title">👤 Kunde</div>
+      <div class="kunde-type-btns">
+        <button class="kunde-type-btn active" id="btn-bestand" onclick="setKundeMode('bestand')">📋 Bestandskunde</button>
+        <button class="kunde-type-btn" id="btn-neu" onclick="setKundeMode('neu')">➕ Neukunde</button>
+      </div>
+      <div id="bestand-wrap">
+        <div class="form-row"><label>KUNDE AUSWÄHLEN</label>
+          <select id="kundeSelect" onchange="onKundeSelected()"><option value="">Wird geladen...</option></select>
+        </div>
+      </div>
+      <div id="neu-wrap" style="display:none;">
+        <div class="kunde-type-btns">
+          <button class="kunde-type-btn active" id="btn-privat" onclick="setNeuKundenTyp('privat')">👤 Privat</button>
+          <button class="kunde-type-btn" id="btn-firma" onclick="setNeuKundenTyp('firma')">🏢 Firma</button>
+        </div>
+        <div id="firma-felder" style="display:none;">
+          <div class="form-row"><label>FIRMENNAME</label><input type="text" id="neuFirma" placeholder="Mustermann GmbH"></div>
+        </div>
+        <div class="form-grid-2">
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">VORNAME</label><input type="text" id="neuVorname" placeholder="Max"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">NACHNAME</label><input type="text" id="neuNachname" placeholder="Mustermann"></div>
+        </div>
+        <div class="form-row"><label>STRASSE + HAUSNR.</label><input type="text" id="neuStrasse" placeholder="Musterstraße 1"></div>
+        <div class="form-grid-2">
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">PLZ</label><input type="text" id="neuPlz" placeholder="12345" maxlength="5" inputmode="numeric" oninput="plzLookup('neuPlz','neuOrt','plzHint')"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">ORT</label><input type="text" id="neuOrt" placeholder="Berlin"></div>
+        </div>
+        <div class="plz-hint" id="plzHint" style="font-size:11px;color:var(--accent2);margin-top:-6px;margin-bottom:8px;display:none;"></div>
+        <div class="form-row"><label>E-MAIL</label><input type="email" id="neuEmail" placeholder="max@beispiel.de"></div>
+      </div>
+      <div id="objektAdresseWrap" style="display:none;">
+        <div class="form-row"><label>EINSATZORT (falls abweichend)</label><textarea id="objektAdresse" rows="2" placeholder="Musterstraße 5&#10;12345 Berlin"></textarea></div>
+      </div>
+    </div>
+
+    <!-- Beschreibung -->
+    <div class="form-section">
+      <div class="form-section-title">📝 Arbeitsbeschreibung</div>
+      <textarea id="beschreibungInput" rows="3" placeholder="Was wurde gemacht?"></textarea>
+    </div>
+
+    <!-- Mitarbeiter -->
+    <div class="form-section">
+      <div class="form-section-title">👷 Mitarbeiter & Stunden</div>
+      <div id="maList"></div>
+      <button class="btn-secondary" onclick="addMitarbeiter()" style="width:100%;margin-top:4px;">＋ Mitarbeiter</button>
+    </div>
+
+    <!-- Material -->
+    <div class="form-section">
+      <div class="form-section-title">📦 Material & Pauschalen</div>
+      <div class="chips-wrap" id="pauschalenChips"></div>
+      <div id="matList"></div>
+      <button class="btn-secondary" onclick="addMaterial()" style="width:100%;margin-top:4px;">＋ Material</button>
+    </div>
+
+    <!-- Fotos -->
+    <div class="form-section">
+      <div class="form-section-title">📸 Fotos</div>
+      <div class="foto-grid" id="fotoGrid"></div>
+      <input type="file" id="fotoInput" accept="image/*" multiple capture="environment" style="display:none;" onchange="handleFotos(event)">
+    </div>
+
+    <!-- Interne Notiz -->
+    <div class="form-section">
+      <div class="form-section-title">🔒 Interne Notiz</div>
+      <textarea id="notizInput" rows="2" placeholder="Nur intern sichtbar, erscheint nicht auf der PDF."></textarea>
+    </div>
+
+    <!-- Unterschrift -->
+    <div class="form-section" id="sigSection">
+      <div class="form-section-title">✍️ Unterschrift Auftraggeber</div>
+      <canvas id="sigCanvas"></canvas>
+      <button class="btn-secondary" onclick="clearSig()" style="margin-top:6px;width:100%;">Löschen</button>
+    </div>
+
+    <!-- Teilleistungen -->
+    <div class="form-section" id="tlSection" style="display:none;">
+      <div class="form-section-title">📋 Teilleistungen</div>
+      <div id="tlList"></div>
+      <button class="btn-secondary" onclick="addTeilleistung()" style="width:100%;margin-top:4px;">＋ Als Teilleistung speichern</button>
+    </div>
+
+    <div class="status-msg" id="formStatus"></div>
+    <br>
+  </div>
+  <div class="bottom-bar" id="formBottomBar">
+    <button class="btn-secondary" onclick="closeForm()" style="flex:1;">✕</button>
+    <button class="btn-secondary" onclick="previewPDF()" style="flex:1;">👁️ Vorschau</button>
+    <button class="btn-primary" onclick="submitForm()" style="flex:2;">📤 Abschicken</button>
+  </div>
+</div>
+
+<!-- EINSTELLUNGEN MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div id="settingsContent"></div>
+  </div>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal-box">
+    <h3>📤 Abschicken</h3>
+    <p class="modal-sub">Wohin soll der Auftrag gesendet werden?</p>
+    <div class="form-row" style="display:flex;align-items:center;gap:10px;flex-direction:row;">
+      <input type="checkbox" id="sendKunde" style="width:18px;height:18px;flex-shrink:0;">
+      <label for="sendKunde" style="font-size:13px;margin:0;">📧 Auch an Kunden schicken</label>
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:10px;flex-direction:row;">
+      <input type="checkbox" id="sendFotos" style="width:18px;height:18px;flex-shrink:0;">
+      <label for="sendFotos" style="font-size:13px;margin:0;">📸 Fotos an Kunden mitschicken</label>
+    </div>
+    <div class="status-msg" id="submitStatus"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" style="flex:1;" onclick="document.getElementById('submitModal').classList.remove('open')">Abbrechen</button>
+      <button class="btn-primary" style="flex:2;" onclick="doSubmit()">Jetzt senden</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let appConfig = null;
+let pauschalen = [], stufen = [], kundenData = [];
+let currentTab = 'entwuerfe', currentTyp = 'arbeitszettel';
+let currentAuftragId = null, kundeMode = 'bestand', neuKundenTyp = 'privat';
+let fotos = [], maxFotos = 10;
+let cachedEntwuerfe = [], cachedArchiv = [], cachedKunden = [];
+let sigCanvas, sigCtx, sigDrawing = false, sigHasData = false;
+let plzTimer = null;
+let currentLang = localStorage.getItem('lang') || 'de';
+
+const T = {
+  de: { drafts:'Entwürfe', archive:'Archiv', customers:'Kunden', maintenance:'Wartung' },
+  en: { drafts:'Drafts', archive:'Archive', customers:'Customers', maintenance:'Maintenance' }
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const theme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '🌙' : '☀️';
+  document.getElementById('datumInput').value = new Date().toISOString().split('T')[0];
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('de-DE', {weekday:'long',day:'2-digit',month:'long'});
+  initSig();
+  await Promise.all([loadConfig(), loadPauschalen(), loadStufen()]);
+  loadKunden();
+  loadList('entwurf');
+  loadWartungen();
+  loadKundenTab();
+  if ('serviceWorker' in navigator) {
+    try { const r = await navigator.serviceWorker.register('/sw.js'); r.update(); } catch(e) {}
+  }
+});
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('theme', next);
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-form').style.display = 'none';
+  document.getElementById('page-' + tab).classList.add('active');
+  if (tab === 'entwuerfe') loadList('entwurf');
+  if (tab === 'archiv') loadList('abgeschickt');
+  if (tab === 'kunden') loadKundenTab();
+  if (tab === 'wartung') loadWartungen();
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    if (!r.ok) return;
+    appConfig = await r.json();
+    if (appConfig.firma?.name) document.getElementById('headerFirmaName').textContent = appConfig.firma.name;
+    updateLogo();
+  } catch(e) {}
+}
+
+function updateLogo() {
+  const w = document.getElementById('headerLogoWrap');
+  w.innerHTML = (appConfig?.hasLogo && appConfig.logoBase64)
+    ? `<img class="header-logo" src="data:${appConfig.logoMime};base64,${appConfig.logoBase64}">`
+    : `<div class="header-logo-ph">🔧</div>`;
+}
+
+// ── PAUSCHALEN / STUFEN ───────────────────────────────────────────────────────
+async function loadPauschalen() {
+  try { const r = await fetch('/api/pauschalen'); pauschalen = await r.json(); renderChips(); } catch(e) {}
+}
+
+function renderChips() {
+  const el = document.getElementById('pauschalenChips');
+  if (!pauschalen.length) { el.innerHTML = `<span style="font-size:12px;color:var(--muted);font-style:italic;">Keine Pauschalen (Einstellungen → Pauschalen)</span>`; return; }
+  el.innerHTML = pauschalen.map(p => `<button class="chip${p.ist_lohnkosten?' lohn':''}" onclick="addPauschale('${p.id}')" title="${p.ist_lohnkosten?'⚒️ Lohnkosten':''}">${p.name}</button>`).join('');
+}
+
+function addPauschale(id) {
+  const p = pauschalen.find(x => x.id === id);
+  if (!p) return;
+  addMaterial({ name: p.name, menge: 1, einheit: p.einheit, preis: p.preis, mwst: p.mwst, ist_lohnkosten: !!p.ist_lohnkosten });
+}
+
+async function loadStufen() {
+  try { const r = await fetch('/api/stufen'); stufen = await r.json(); } catch(e) {}
+}
+
+function stufenOptions(selected = '') {
+  return `<option value="">– Stufe –</option>` + stufen.map(s => `<option value="${s.id}" data-bez="${s.bezeichnung}" data-preis="${s.stundenpreis}" ${selected===s.id?'selected':''}>${s.bezeichnung}</option>`).join('');
+}
+
+// ── KUNDEN ────────────────────────────────────────────────────────────────────
+async function loadKunden() {
+  const sel = document.getElementById('kundeSelect');
+  sel.innerHTML = '<option value="">Wird geladen...</option>';
+  try {
+    const r = await fetch('/api/lexoffice/contacts?customer=true&size=250');
+    const data = await r.json();
+    kundenData = data.content || [];
+    renderKundenSelect();
+  } catch(e) { sel.innerHTML = '<option value="">Fehler – Lexoffice prüfen</option>'; }
+}
+
+function renderKundenSelect() {
+  const sel = document.getElementById('kundeSelect');
+  const sorted = [...kundenData].sort((a,b) => (a.company?.name||a.person?.lastName||'').localeCompare(b.company?.name||b.person?.lastName||'','de'));
+  sel.innerHTML = '<option value="">– Kunde auswählen –</option>';
+  sorted.forEach(k => {
+    const isFirma = !!k.company?.name;
+    const name = k.company?.name || ((k.person?.firstName||'') + ' ' + (k.person?.lastName||'')).trim();
+    const opt = document.createElement('option');
+    opt.value = k.id; opt.textContent = (isFirma?'🏢 ':'👤 ') + name;
+    opt.dataset.typ = isFirma ? 'firma' : 'privat';
+    opt.dataset.name = name; opt.dataset.firma = k.company?.name||'';
+    opt.dataset.email = k.emailAddresses?.business?.[0] || k.emailAddresses?.private?.[0] || '';
+    const adr = k.addresses?.billing?.[0] || {};
+    opt.dataset.strasse = adr.street||''; opt.dataset.plz = adr.zip||''; opt.dataset.ort = adr.city||'';
+    sel.appendChild(opt);
+  });
+}
+
+function onKundeSelected() {
+  const sel = document.getElementById('kundeSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const isFirma = opt?.dataset?.typ === 'firma';
+  document.getElementById('objektAdresseWrap').style.display = (isFirma && sel.value) ? 'block' : 'none';
+}
+
+function setKundeMode(mode) {
+  kundeMode = mode;
+  document.getElementById('bestand-wrap').style.display = mode === 'bestand' ? 'block' : 'none';
+  document.getElementById('neu-wrap').style.display = mode === 'neu' ? 'block' : 'none';
+  document.getElementById('btn-bestand').classList.toggle('active', mode === 'bestand');
+  document.getElementById('btn-neu').classList.toggle('active', mode === 'neu');
+}
+
+function setNeuKundenTyp(typ) {
+  neuKundenTyp = typ;
+  document.getElementById('firma-felder').style.display = typ === 'firma' ? 'block' : 'none';
+  document.getElementById('btn-privat').classList.toggle('active', typ === 'privat');
+  document.getElementById('btn-firma').classList.toggle('active', typ === 'firma');
+}
+
+// PLZ Lookup
+let plzTimers = {};
+function plzLookup(plzId, ortId, hintId) {
+  const plz = document.getElementById(plzId).value.trim();
+  const hint = document.getElementById(hintId);
+  if (plz.length !== 5) { hint.style.display = 'none'; return; }
+  clearTimeout(plzTimers[plzId]);
+  plzTimers[plzId] = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/plz/' + plz);
+      const d = await r.json();
+      if (d.found && d.city) {
+        document.getElementById(ortId).value = d.city;
+        hint.textContent = '✓ ' + d.city; hint.style.display = 'block';
+        setTimeout(() => hint.style.display = 'none', 2000);
+      }
+    } catch(e) {}
+  }, 500);
+}
+
+// ── AUFTRAGS-LISTE ────────────────────────────────────────────────────────────
+async function loadList(status) {
+  try {
+    const r = await fetch(`/api/auftraege?status=${status}`);
+    const data = await r.json();
+    if (status === 'entwurf') cachedEntwuerfe = data;
+    else cachedArchiv = data;
+    renderList(status === 'entwurf' ? 'entwuerfe' : 'archiv', data);
+  } catch(e) {}
+}
+
+function renderList(tab, data) {
+  const q = document.getElementById('search' + (tab==='entwuerfe'?'Entwuerfe':'Archiv')).value.toLowerCase();
+  const el = document.getElementById(tab + '-list');
+  const filtered = q ? data.filter(a => (a.kunde_name||'').toLowerCase().includes(q) || (a.titel||'').toLowerCase().includes(q)) : data;
+  if (!filtered.length) {
+    el.innerHTML = `<div class="list-empty"><div class="emoji">${tab==='entwuerfe'?'📝':'✅'}</div><p>${q?'Keine Ergebnisse':'Noch keine ' + (tab==='entwuerfe'?'Entwürfe':'Aufträge')}</p></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(a => {
+    const datum = a.erstellt_am ? new Date(a.erstellt_am).toLocaleDateString('de-DE') : '';
+    const typLabel = a.typ === 'angebot' ? '💶' : a.typ === 'lieferschein' ? '📦' : '📋';
+    const name = highlight(a.kunde_name || 'Kein Kunde', q);
+    const titel = highlight(a.titel || '–', q);
+    return `<div class="auftrag-card" onclick="openForm('${a.id}')">
+      <div class="card-top"><span>${typLabel}</span><span class="card-title">${titel}</span><span class="badge">${datum}</span></div>
+      <div class="card-meta"><span>${name}</span>${a.teilleistungenCount>0?`<span>📋 ${a.teilleistungenCount} Teilleistungen</span>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterList(tab) { renderList(tab, tab==='entwuerfe'?cachedEntwuerfe:cachedArchiv); }
+
+function highlight(text, q) {
+  if (!q || !text) return text || '';
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return String(text).replace(re, '<mark class="search-highlight">$1</mark>');
+}
+
+// ── KUNDEN TAB ────────────────────────────────────────────────────────────────
+async function loadKundenTab() {
+  try {
+    if (!kundenData.length) {
+      const r = await fetch('/api/lexoffice/contacts?customer=true&size=250');
+      const data = await r.json();
+      kundenData = data.content || [];
+    }
+    cachedKunden = kundenData;
+    renderKundenTab(kundenData);
+  } catch(e) {
+    document.getElementById('kunden-list').innerHTML = '<div class="list-empty"><div class="emoji">🔗</div><p>Lexoffice nicht verbunden.<br>Bitte API-Key in Einstellungen eintragen.</p></div>';
+  }
+}
+
+function renderKundenTab(kunden) {
+  const q = document.getElementById('searchKunden').value.toLowerCase();
+  const filtered = q ? kunden.filter(k => {
+    const name = k.company?.name || ((k.person?.firstName||'') + ' ' + (k.person?.lastName||'')).trim();
+    return name.toLowerCase().includes(q);
+  }) : kunden;
+  const el = document.getElementById('kunden-list');
+  if (!filtered.length) { el.innerHTML = '<div class="list-empty"><div class="emoji">👥</div><p>Keine Kunden gefunden</p></div>'; return; }
+  el.innerHTML = filtered.map(k => {
+    const isFirma = !!k.company?.name;
+    const name = k.company?.name || ((k.person?.firstName||'') + ' ' + (k.person?.lastName||'')).trim();
+    const city = k.addresses?.billing?.[0]?.city || '';
+    return `<div class="auftrag-card" onclick="openKundeDetail('${k.id}','${name.replace(/'/g,'')}')">
+      <div class="card-top"><span>${isFirma?'🏢':'👤'}</span><span class="card-title">${highlight(name,q)}</span></div>
+      <div class="card-meta"><span>${highlight(city,q)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function filterKunden() { renderKundenTab(cachedKunden); }
+
+async function openKundeDetail(kundeId, kundeName) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-form').style.display = 'block';
+  document.getElementById('page-form').classList.add('active');
+  document.getElementById('form-wrap').style.display = 'none';
+  document.getElementById('formBottomBar').style.display = 'none';
+
+  const detail = document.createElement('div');
+  detail.id = 'kundeDetail';
+  detail.style.padding = '14px';
+  detail.innerHTML = `<button class="btn-secondary" style="margin-bottom:12px;" onclick="closeKundeDetail()">‹ Zurück</button>
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;">👤 ${kundeName}</h2>
+    <div style="color:var(--muted);font-size:13px;">Lade...</div>`;
+  document.getElementById('page-form').appendChild(detail);
+
+  try {
+    const r = await fetch(`/api/auftraege?kundeId=${kundeId}`);
+    const hist = await r.json();
+    detail.innerHTML = `<button class="btn-secondary" style="margin-bottom:12px;" onclick="closeKundeDetail()">‹ Zurück</button>
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">👤 ${kundeName}</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">${hist.length} Auftrag/Aufträge</p>
+      ${hist.map(a => `<div class="history-item"><div class="history-item-top"><span class="history-item-title">${a.titel||'Ohne Titel'}</span><span class="history-item-date">${new Date(a.geaendert_am).toLocaleDateString('de-DE')}</span></div><div class="history-item-meta">${a.typ==='angebot'?'Angebot':a.typ==='lieferschein'?'Lieferschein':'Arbeitszettel'} · ${a.status==='abgeschickt'?'✅ Abgeschickt':'📝 Entwurf'}</div></div>`).join('') || '<div style="color:var(--muted);font-size:13px;">Noch keine Aufträge.</div>'}
+      <button class="btn-primary" style="margin-top:14px;" onclick="closeKundeDetail();openForm(null,'${kundeId}')">＋ Neuer Auftrag</button>`;
+  } catch(e) {}
+}
+
+function closeKundeDetail() {
+  const d = document.getElementById('kundeDetail');
+  if (d) d.remove();
+  document.getElementById('form-wrap').style.display = '';
+  document.getElementById('formBottomBar').style.display = '';
+  document.getElementById('page-form').style.display = 'none';
+  showTab('kunden');
+}
+
+// ── FORM ÖFFNEN ───────────────────────────────────────────────────────────────
+async function openForm(id, prefillKundeId = null) {
+  currentAuftragId = id;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-form').style.display = 'block';
+  document.getElementById('page-form').classList.add('active');
+  document.getElementById('form-wrap').style.display = '';
+  document.getElementById('formBottomBar').style.display = '';
+  clearForm();
+
+  if (id) {
+    try {
+      const r = await fetch(`/api/auftraege/${id}`);
+      const data = await r.json();
+      fillForm(data.data, data.typ || 'arbeitszettel');
+      // Teilleistungen
+      if (data.teilleistungen?.length) {
+        document.getElementById('tlSection').style.display = 'block';
+        renderTeilleistungen(data.teilleistungen);
+      }
+    } catch(e) {}
+  } else {
+    addMitarbeiter();
+    if (prefillKundeId) {
+      setKundeMode('bestand');
+      document.getElementById('kundeSelect').value = prefillKundeId;
+      onKundeSelected();
+    }
+  }
+  initSig();
+}
+
+function closeForm() {
+  document.getElementById('page-form').style.display = 'none';
+  document.getElementById('page-form').classList.remove('active');
+  document.getElementById('page-' + currentTab).classList.add('active');
+}
+
+function clearForm() {
+  currentTyp = 'arbeitszettel';
+  setTyp('arbeitszettel');
+  document.getElementById('titelInput').value = '';
+  document.getElementById('datumInput').value = new Date().toISOString().split('T')[0];
+  document.getElementById('beschreibungInput').value = '';
+  document.getElementById('notizInput').value = '';
+  document.getElementById('objektAdresse').value = '';
+  document.getElementById('objektAdresseWrap').style.display = 'none';
+  document.getElementById('maList').innerHTML = '';
+  document.getElementById('matList').innerHTML = '';
+  document.getElementById('tlList').innerHTML = '';
+  document.getElementById('tlSection').style.display = 'none';
+  fotos = []; renderFotoGrid();
+  clearSig();
+  setKundeMode('bestand');
+  setNeuKundenTyp('privat');
+}
+
+function setTyp(typ) {
+  currentTyp = typ;
+  ['arbeitszettel','angebot','lieferschein'].forEach(t => document.getElementById('typ-'+t).classList.toggle('active', t===typ));
+  document.getElementById('sigSection').style.display = typ === 'arbeitszettel' ? 'block' : 'none';
+}
+
+function fillForm(data, typ) {
+  setTyp(typ || 'arbeitszettel');
+  document.getElementById('titelInput').value = data.titel || '';
+  document.getElementById('datumInput').value = data.datum || new Date().toISOString().split('T')[0];
+  document.getElementById('beschreibungInput').value = data.beschreibung || '';
+  document.getElementById('notizInput').value = data.notiz || '';
+
+  if (data.kunde?.contactId) {
+    setKundeMode('bestand');
+    const sel = document.getElementById('kundeSelect');
+    sel.value = data.kunde.contactId;
+    if (!sel.value) { // Fallback wenn Kunde nicht in Liste
+      const opt = document.createElement('option');
+      opt.value = data.kunde.contactId;
+      opt.textContent = data.kunde.firma || data.kunde.name || '';
+      sel.appendChild(opt); sel.value = data.kunde.contactId;
+    }
+    if (data.objektAdresse) { document.getElementById('objektAdresseWrap').style.display = 'block'; document.getElementById('objektAdresse').value = data.objektAdresse; }
+  }
+
+  document.getElementById('maList').innerHTML = '';
+  (data.mitarbeiter || []).forEach(m => addMitarbeiter(m));
+  if (!(data.mitarbeiter||[]).length) addMitarbeiter();
+
+  document.getElementById('matList').innerHTML = '';
+  (data.materialien || []).forEach(m => addMaterial(m));
+
+  fotos = data.fotos || []; renderFotoGrid();
+
+  if (data.signatureDataUrl) {
+    sigHasData = true;
+    const img = new Image();
+    img.onload = () => { if(sigCtx) sigCtx.drawImage(img,0,0); };
+    img.src = data.signatureDataUrl;
+  }
+}
+
+// ── MITARBEITER ───────────────────────────────────────────────────────────────
+function addMitarbeiter(data = {}) {
+  const id = 'ma_' + Date.now() + Math.random();
+  const div = document.createElement('div');
+  div.className = 'ma-row'; div.id = id;
+  div.innerHTML = `<input type="text" placeholder="Name" value="${data.name||''}" class="ma-name">
+    <select class="ma-stufe" onchange="onStufeChange(this)">${stufenOptions(data.stufeId||'')}</select>
+    <input type="number" placeholder="Std." value="${data.std||''}" class="sm ma-std" inputmode="decimal" step="0.5">
+    <button class="ma-del" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('maList').appendChild(div);
+  // Stundenpreis aus Stufe setzen falls vorhanden
+  if (data.stundenpreis) div.querySelector('.ma-stufe').dataset.manualPreis = data.stundenpreis;
+}
+
+function onStufeChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  // Stundenpreis ist im dataset
+}
+
+function getMitarbeiter() {
+  return Array.from(document.querySelectorAll('.ma-row')).map(row => {
+    const nameEl = row.querySelector('.ma-name');
+    const stufeEl = row.querySelector('.ma-stufe');
+    const stdEl = row.querySelector('.ma-std');
+    const opt = stufeEl?.options[stufeEl.selectedIndex];
+    return {
+      name: nameEl?.value.trim() || '',
+      stufe: opt?.dataset.bez || '',
+      stufeId: stufeEl?.value || '',
+      stundenpreis: parseFloat(opt?.dataset.preis) || 0,
+      std: parseFloat(stdEl?.value) || 0
+    };
+  }).filter(m => m.name || m.std);
+}
+
+// ── MATERIAL ──────────────────────────────────────────────────────────────────
+function addMaterial(data = {}) {
+  const id = 'mat_' + Date.now() + Math.random();
+  const div = document.createElement('div');
+  div.className = 'mat-row'; div.id = id;
+  div.innerHTML = `<input type="text" placeholder="Bezeichnung" value="${data.name||''}">
+    <input type="number" placeholder="Menge" value="${data.menge||1}" class="sm" inputmode="decimal">
+    <select>${['Stk','m','m²','l','kg','Pkg','Psch'].map(e=>`<option${data.einheit===e?' selected':''}>${e}</option>`).join('')}</select>
+    <input type="number" placeholder="€ netto" value="${data.preis||''}" class="sm" inputmode="decimal" style="display:${currentTyp==='arbeitszettel'?'none':'block'}">
+    <button class="mat-del" onclick="this.parentElement.remove()">✕</button>`;
+  // Store lohnkosten flag
+  div.dataset.istLohnkosten = data.ist_lohnkosten ? '1' : '0';
+  div.dataset.mwst = data.mwst || '19';
+  document.getElementById('matList').appendChild(div);
+}
+
+function getMaterialien() {
+  return Array.from(document.querySelectorAll('.mat-row')).map(row => {
+    const inputs = row.querySelectorAll('input');
+    const sel = row.querySelector('select');
+    return {
+      name: inputs[0]?.value.trim() || '',
+      menge: parseFloat(inputs[1]?.value) || 1,
+      einheit: sel?.value || 'Stk',
+      preis: parseFloat(inputs[2]?.value) || 0,
+      mwst: parseInt(row.dataset.mwst) || 19,
+      ist_lohnkosten: row.dataset.istLohnkosten === '1'
+    };
+  }).filter(m => m.name);
+}
+
+// ── FOTOS ─────────────────────────────────────────────────────────────────────
+function renderFotoGrid() {
+  const grid = document.getElementById('fotoGrid');
+  grid.innerHTML = fotos.map((f,i) => `<div class="foto-thumb"><img src="${f}"><button class="foto-del" onclick="deleteFoto(${i})">✕</button></div>`).join('');
+  if (fotos.length < maxFotos) {
+    grid.innerHTML += `<div class="foto-add" onclick="document.getElementById('fotoInput').click()"><span>📷</span>Foto</div>`;
+  }
+}
+
+function handleFotos(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    if (fotos.length >= maxFotos) return;
+    const reader = new FileReader();
+    reader.onload = ev => { fotos.push(ev.target.result); renderFotoGrid(); };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function deleteFoto(i) { fotos.splice(i, 1); renderFotoGrid(); }
+
+// ── UNTERSCHRIFT ──────────────────────────────────────────────────────────────
+function initSig() {
+  sigCanvas = document.getElementById('sigCanvas');
+  if (!sigCanvas) return;
+  sigCtx = sigCanvas.getContext('2d');
+  const w = sigCanvas.offsetWidth;
+  sigCanvas.width = w; sigCanvas.height = 130;
+  sigCtx.strokeStyle = '#1a3a6b'; sigCtx.lineWidth = 2; sigCtx.lineCap = 'round';
+
+  const getPos = (e) => {
+    const rect = sigCanvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * (sigCanvas.width/rect.width), y: (src.clientY - rect.top) * (sigCanvas.height/rect.height) };
+  };
+  sigCanvas.addEventListener('mousedown', e => { sigDrawing=true; const p=getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); });
+  sigCanvas.addEventListener('mousemove', e => { if(!sigDrawing)return; const p=getPos(e); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); sigHasData=true; });
+  sigCanvas.addEventListener('mouseup', () => sigDrawing=false);
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); sigDrawing=true; const p=getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); }, {passive:false});
+  sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(!sigDrawing)return; const p=getPos(e); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); sigHasData=true; }, {passive:false});
+  sigCanvas.addEventListener('touchend', () => sigDrawing=false);
+}
+
+function clearSig() { if(sigCtx) sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height); sigHasData=false; }
+
+// ── DATEN SAMMELN ─────────────────────────────────────────────────────────────
+function collectFormData() {
+  let kunde = null;
+  if (kundeMode === 'bestand') {
+    const sel = document.getElementById('kundeSelect');
+    const opt = sel.options[sel.selectedIndex];
+    if (sel.value) {
+      kunde = { contactId: sel.value, name: opt?.dataset.name||'', firma: opt?.dataset.firma||'', email: opt?.dataset.email||'', strasse: opt?.dataset.strasse||'', plz: opt?.dataset.plz||'', ort: opt?.dataset.ort||'' };
+    }
+  } else {
+    kunde = { name: (document.getElementById('neuVorname').value + ' ' + document.getElementById('neuNachname').value).trim(), firma: document.getElementById('neuFirma')?.value.trim()||'', email: document.getElementById('neuEmail').value.trim(), strasse: document.getElementById('neuStrasse').value.trim(), plz: document.getElementById('neuPlz').value.trim(), ort: document.getElementById('neuOrt').value.trim() };
+  }
+  return {
+    titel: document.getElementById('titelInput').value.trim(),
+    datum: document.getElementById('datumInput').value,
+    beschreibung: document.getElementById('beschreibungInput').value.trim(),
+    notiz: document.getElementById('notizInput').value.trim(),
+    objektAdresse: document.getElementById('objektAdresse').value.trim(),
+    kunde, mitarbeiter: getMitarbeiter(), materialien: getMaterialien(),
+    fotos: fotos.map(f => f.includes(',') ? f.split(',')[1] : f),
+    signatureDataUrl: sigHasData ? sigCanvas.toDataURL() : null
+  };
+}
+
+// ── SPEICHERN ─────────────────────────────────────────────────────────────────
+async function saveForm() {
+  const data = collectFormData();
+  const r = await fetch('/api/auftraege', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: currentAuftragId, data, typ: currentTyp }) });
+  const d = await r.json();
+  if (!currentAuftragId) currentAuftragId = d.id;
+  return d.id;
+}
+
+// ── TEILLEISTUNGEN ────────────────────────────────────────────────────────────
+async function addTeilleistung() {
+  if (!currentAuftragId) { currentAuftragId = await saveForm(); }
+  const data = collectFormData();
+  await fetch(`/api/auftraege/${currentAuftragId}/teilleistung`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data}) });
+  clearForm();
+  const r = await fetch(`/api/auftraege/${currentAuftragId}`);
+  const auftrag = await r.json();
+  document.getElementById('tlSection').style.display = 'block';
+  renderTeilleistungen(auftrag.teilleistungen||[]);
+  showStatus('formStatus', '✅ Teilleistung gespeichert', 'success');
+}
+
+function renderTeilleistungen(tls) {
+  document.getElementById('tlList').innerHTML = tls.map(tl => {
+    const d = tl.data || {};
+    const datum = tl.erstellt_am ? new Date(tl.erstellt_am).toLocaleDateString('de-DE') : '';
+    return `<div class="tl-item"><div><div style="font-size:13px;font-weight:600;">${d.titel||'Teilleistung'}</div><div class="tl-info">${datum} · ${(d.mitarbeiter||[]).map(m=>m.name).join(', ')||'–'}</div></div><button class="btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteTl('${tl.id}')">✕</button></div>`;
+  }).join('');
+}
+
+async function deleteTl(id) {
+  if (!confirm('Teilleistung löschen?')) return;
+  await fetch(`/api/teilleistungen/${id}`, {method:'DELETE'});
+  openForm(currentAuftragId);
+}
+
+// ── VORSCHAU ──────────────────────────────────────────────────────────────────
+async function previewPDF() {
+  const id = await saveForm();
+  const r = await fetch('/api/preview-pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({auftragId:id}) });
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+async function submitForm() {
+  await saveForm();
+  document.getElementById('submitModal').classList.add('open');
+}
+
+async function doSubmit() {
+  const statusEl = document.getElementById('submitStatus');
+  statusEl.textContent = 'Wird gesendet...'; statusEl.className = 'status-msg info';
+
+  // Neukunde anlegen falls nötig
+  if (kundeMode === 'neu' && appConfig?.lexofficeConfigured) {
+    const vorname = document.getElementById('neuVorname').value.trim();
+    const nachname = document.getElementById('neuNachname').value.trim();
+    const firma = document.getElementById('neuFirma')?.value.trim();
+    const email = document.getElementById('neuEmail').value.trim();
+    const str = document.getElementById('neuStrasse').value.trim();
+    const plz = document.getElementById('neuPlz').value.trim();
+    const ort = document.getElementById('neuOrt').value.trim();
+    const cd = { version: 0, roles: { customer: {} } };
+    if (neuKundenTyp === 'firma' && firma) {
+      cd.company = { name: firma, allowTaxFreeInvoices: false };
+      if (vorname||nachname) cd.company.contactPersons = [{ firstName:vorname, lastName:nachname, primary:true }];
+    } else { cd.person = { firstName:vorname, lastName:nachname }; }
+    if (email) cd.emailAddresses = { business:[email] };
+    if (str||plz||ort) cd.addresses = { billing:[{ street:str, zip:plz, city:ort, countryCode:'DE' }] };
+    try {
+      const cr = await fetch('/api/create-contact', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contact:cd}) });
+      const cdata = await cr.json();
+      if (cdata.id) {
+        const sel = document.getElementById('kundeSelect');
+        const opt = document.createElement('option');
+        opt.value=cdata.id; opt.dataset.name=(firma||nachname); opt.dataset.firma=firma||''; opt.dataset.email=email;
+        sel.appendChild(opt); sel.value=cdata.id;
+        setKundeMode('bestand');
+        await saveForm();
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const r = await fetch('/api/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ auftragId:currentAuftragId, sendToKunde:document.getElementById('sendKunde').checked, sendFotosToKunde:document.getElementById('sendFotos').checked }) });
+    const d = await r.json();
+    const ok = d.results;
+    const msgs = [];
+    if (ok.pdf==='ok') msgs.push('✅ PDF erstellt');
+    if (ok.emailFirma==='ok') msgs.push('✅ E-Mail an Firma');
+    if (ok.emailKunde==='ok') msgs.push('✅ E-Mail an Kunden');
+    if (ok.lexoffice) msgs.push('✅ Lexoffice Entwurf');
+    if (d.errors?.length) msgs.push(...d.errors.map(e=>'⚠️ '+e));
+    statusEl.textContent = msgs.join(' · ') || '✅ Fertig';
+    statusEl.className = 'status-msg ' + (d.errors?.length ? 'error' : 'success');
+    setTimeout(() => {
+      document.getElementById('submitModal').classList.remove('open');
+      closeForm();
+      loadList('entwurf');
+    }, 2500);
+  } catch(e) {
+    statusEl.textContent = 'Fehler: ' + e.message;
+    statusEl.className = 'status-msg error';
+  }
+}
+
+// ── WARTUNG ───────────────────────────────────────────────────────────────────
+async function loadWartungen() {
+  try {
+    const r = await fetch('/api/wartungsplaene');
+    const data = await r.json();
+    const badge = document.getElementById('wartungBadge');
+    const faellig = data.filter(w => w.ueberfaellig || (w.tageVerbleibend !== null && w.tageVerbleibend <= (w.erinnerung_tage||30)));
+    if (faellig.length) { badge.textContent = faellig.length; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+    renderWartungen(data);
+  } catch(e) {}
+}
+
+function renderWartungen(data) {
+  const el = document.getElementById('wartung-list');
+  if (!data.length) { el.innerHTML = '<div class="list-empty"><div class="emoji">⏰</div><p>Noch keine Wartungspläne</p></div>'; return; }
+  el.innerHTML = data.map(w => {
+    const naechste = w.naechste_wartung ? new Date(w.naechste_wartung).toLocaleDateString('de-DE') : '–';
+    let statusClass = 'status-ok', statusText = `✅ Fällig am ${naechste}`;
+    if (w.ueberfaellig) { statusClass='status-faellig'; statusText=`⚠️ Überfällig! (${naechste})`; }
+    else if (w.tageVerbleibend !== null && w.tageVerbleibend <= (w.erinnerung_tage||30)) { statusClass='status-bald'; statusText=`⏰ Fällig in ${w.tageVerbleibend} Tag(en)`; }
+    return `<div class="wartung-card">
+      <span class="wartung-status ${statusClass}">${statusText}</span>
+      <div style="font-size:14px;font-weight:600;">${w.kunde_name}</div>
+      <div style="font-size:12px;color:var(--muted);">🔧 ${w.anlage} · alle ${w.intervall_monate} Monate</div>
+      ${w.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:4px;">${w.notiz}</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn-secondary" style="flex:1;font-size:11px;" onclick="openWartungForm('${w.id}')">✏️ Bearbeiten</button>
+        <button class="btn-primary" style="flex:1;font-size:11px;" onclick="wartungErledigt('${w.id}','${w.kunde_name}','${w.anlage}')">✅ Erledigt</button>
+        <button class="btn-danger" style="font-size:11px;" onclick="deleteWartung('${w.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openWartungForm(id) {
+  const content = document.getElementById('settingsContent');
+  let existing = null;
+  if (id) {
+    fetch(`/api/wartungsplaene/${id}`).then(r=>r.json()).then(w => {
+      existing = w;
+      renderWartungForm(id, w);
+    });
+  } else { renderWartungForm(null, null); }
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function renderWartungForm(id, w) {
+  const content = document.getElementById('settingsContent');
+  const kundeOptions = kundenData.length
+    ? `<select id="wKundeSelect"><option value="">– Kunde –</option>${kundenData.map(k=>{const n=k.company?.name||((k.person?.firstName||'')+' '+(k.person?.lastName||'')).trim();return`<option value="${k.id}" data-name="${n}" ${w?.kunde_id===k.id?'selected':''}>${n}</option>`;}).join('')}</select>`
+    : `<input type="text" id="wKundeFreitext" value="${w?.kunde_name||''}" placeholder="Kundenname">`;
+  content.innerHTML = `
+    <h3>${id?'✏️ Wartungsplan bearbeiten':'➕ Neuer Wartungsplan'}</h3>
+    <div class="form-row"><label>KUNDE *</label>${kundeOptions}</div>
+    <div class="form-row"><label>ANLAGE / GERÄT *</label><input type="text" id="wAnlage" value="${w?.anlage||''}" placeholder="z.B. Gasheizung, Brenner..."></div>
+    <div class="form-grid-2">
+      <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">INTERVALL (Monate)</label>
+        <select id="wIntervall">${[3,6,12,24].map(v=>`<option value="${v}" ${(w?.intervall_monate||12)==v?'selected':''}>${v} Monate</option>`).join('')}</select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">ERINNERUNG (Tage vorher)</label>
+        <input type="number" id="wErinnerung" value="${w?.erinnerung_tage||30}" inputmode="numeric"></div>
+    </div>
+    <div class="form-row"><label>LETZTE WARTUNG</label><input type="date" id="wLetzte" value="${w?.letzte_wartung||''}"></div>
+    <div class="form-row"><label>NOTIZ</label><textarea id="wNotiz" rows="2">${w?.notiz||''}</textarea></div>
+    <div class="form-row"><label>FOTO</label><input type="file" id="wFotoInput" accept="image/*" style="color:var(--text);"></div>
+    <div class="status-msg" id="wStatus"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" style="flex:1;" onclick="closeSettingsModal()">Abbrechen</button>
+      <button class="btn-primary" style="flex:2;" onclick="saveWartung('${id||''}')">Speichern</button>
+    </div>`;
+}
+
+async function saveWartung(id) {
+  const kundeEl = document.getElementById('wKundeSelect');
+  const freiEl = document.getElementById('wKundeFreitext');
+  let kundeId = '', kundeName = '';
+  if (kundeEl) { kundeId=kundeEl.value; kundeName=kundeEl.options[kundeEl.selectedIndex]?.dataset?.name||kundeEl.options[kundeEl.selectedIndex]?.text||''; }
+  else if (freiEl) { kundeName=freiEl.value.trim(); }
+  const anlage = document.getElementById('wAnlage').value.trim();
+  if (!kundeName||!anlage) { const s=document.getElementById('wStatus');s.textContent='Bitte Kunde und Anlage angeben.';s.className='status-msg error';return; }
+  let foto_base64='',foto_mime='';
+  const fi=document.getElementById('wFotoInput');
+  if (fi.files[0]) { foto_base64=await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result.split(',')[1]);fr.readAsDataURL(fi.files[0]);});foto_mime=fi.files[0].type; }
+  const body={kunde_id:kundeId,kunde_name:kundeName,anlage,intervall_monate:parseInt(document.getElementById('wIntervall').value),erinnerung_tage:parseInt(document.getElementById('wErinnerung').value),letzte_wartung:document.getElementById('wLetzte').value,notiz:document.getElementById('wNotiz').value.trim(),foto_base64,foto_mime};
+  const url=id?`/api/wartungsplaene/${id}`:'/api/wartungsplaene';
+  const r=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){closeSettingsModal();loadWartungen();}
+}
+
+function wartungErledigt(id, kundeName, anlage) {
+  const content = document.getElementById('settingsContent');
+  content.innerHTML = `<h3>✅ Wartung erledigt</h3>
+    <p class="modal-sub">${kundeName} · ${anlage}</p>
+    <div class="form-row"><label>DATUM</label><input type="date" id="wErlDatum" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-row"><label>NOTIZ</label><textarea id="wErlNotiz" rows="2" placeholder="Was wurde gemacht?"></textarea></div>
+    <div class="form-row"><label>FOTO</label><input type="file" id="wErlFoto" accept="image/*" style="color:var(--text);"></div>
+    <div class="status-msg" id="erlStatus"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" style="flex:1;" onclick="closeSettingsModal()">Abbrechen</button>
+      <button class="btn-primary" style="flex:2;" onclick="confirmErledigt('${id}')">Speichern</button>
+    </div>`;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+async function confirmErledigt(id) {
+  let foto_base64='',foto_mime='';
+  const fi=document.getElementById('wErlFoto');
+  if(fi.files[0]){foto_base64=await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result.split(',')[1]);fr.readAsDataURL(fi.files[0]);});foto_mime=fi.files[0].type;}
+  const r=await fetch(`/api/wartungsplaene/${id}/erledigt`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datum:document.getElementById('wErlDatum').value,notiz:document.getElementById('wErlNotiz').value.trim(),foto_base64,foto_mime})});
+  const d=await r.json();
+  if(r.ok){const s=document.getElementById('erlStatus');s.textContent=`✅ Gespeichert. Nächste Wartung: ${new Date(d.naechste_wartung).toLocaleDateString('de-DE')}`;s.className='status-msg success';setTimeout(()=>{closeSettingsModal();loadWartungen();},1500);}
+}
+
+async function deleteWartung(id) {
+  if(!confirm('Wartungsplan löschen?'))return;
+  await fetch(`/api/wartungsplaene/${id}`,{method:'DELETE'});
+  loadWartungen();
+}
+
+// ── EINSTELLUNGEN ─────────────────────────────────────────────────────────────
+async function openSettings(tab) {
+  const content = document.getElementById('settingsContent');
+  let body = '';
+
+  if (tab === 'start') {
+    body = `<h3>⚙️ Einstellungen</h3><p class="modal-sub">Konfiguration der App.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${[['🖼️','Logo','logo'],['🏢','Firma','firma'],['✉️','Gmail','gmail'],['🔑','Lexoffice','lexoffice'],['📦','Pauschalen','pauschalen'],['👷','Stufen','stufen'],['📋','Vorlagen','vorlagen'],['💾','Export','export'],['📋','Aktivitätslog','log'],['🌐','Sprache','sprache'],['🔔','Push','push']].map(([ico,txt,t])=>`<button class="card-btn" onclick="openSettings('${t}')">${ico} ${txt}</button>`).join('')}
+      </div>
+      <div class="modal-btns"><button class="btn-secondary" style="flex:1;" onclick="closeSettingsModal()">Schließen</button></div>`;
+
+  } else if (tab === 'logo') {
+    body = `<h3>🖼️ Logo</h3><p class="modal-sub">Erscheint im Header und auf der PDF.</p>
+      ${appConfig?.hasLogo?`<img src="data:${appConfig.logoMime};base64,${appConfig.logoBase64}" style="max-height:60px;margin-bottom:10px;"><br>`:''}
+      <div class="form-row"><label>BILD (PNG/JPG)</label><input type="file" id="logoFile" accept="image/*" style="color:var(--text);"></div>
+      <div class="modal-btns">${appConfig?.hasLogo?`<button class="btn-danger" onclick="deleteLogo()">🗑️</button>`:''}<button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="uploadLogo()">Speichern</button></div>`;
+
+  } else if (tab === 'firma') {
+    const f = appConfig?.firma || {};
+    body = `<h3>🏢 Firmendaten</h3>
+      <div class="form-row"><label>FIRMENNAME</label><input type="text" id="sName" value="${f.name||''}"></div>
+      <div class="form-row"><label>STRASSE</label><input type="text" id="sStr" value="${f.strasse||''}"></div>
+      <div class="form-grid-2"><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">PLZ</label><input type="text" id="sPlz" value="${f.plz||''}"></div><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">ORT</label><input type="text" id="sOrt" value="${f.ort||''}"></div></div>
+      <div class="form-row"><label>TELEFON</label><input type="text" id="sTel" value="${f.telefon||''}"></div>
+      <div class="form-row"><label>E-MAIL</label><input type="email" id="sEmail" value="${f.email||''}"></div>
+      <div class="form-row"><label>UST-NR.</label><input type="text" id="sUst" value="${f.ustNr||''}"></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="saveFirma()">Speichern</button></div>`;
+
+  } else if (tab === 'gmail') {
+    body = `<h3>✉️ Gmail</h3><p class="modal-sub">App-Passwort unter Google → Sicherheit → App-Passwörter.</p>
+      <div class="form-row"><label>GMAIL-ADRESSE</label><input type="email" id="gUser" placeholder="name@gmail.com"></div>
+      <div class="form-row"><label>APP-PASSWORT</label><input type="password" id="gPass" placeholder="xxxx xxxx xxxx xxxx"></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="saveGmail()">Speichern</button></div>`;
+
+  } else if (tab === 'lexoffice') {
+    body = `<h3>🔑 Lexoffice API-Key</h3><p class="modal-sub">Lexoffice → Einstellungen → Integrationen → API<br>Der Key wird sicher auf dem Server gespeichert.</p>
+      <div class="form-row"><label>API-KEY</label><input type="password" id="lxKey" placeholder="Dein Lexoffice API-Key" autocomplete="off"></div>
+      <div class="status-msg" id="lxStatus"></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="saveLexoffice()">Speichern</button></div>`;
+
+  } else if (tab === 'pauschalen') {
+    const r = await fetch('/api/pauschalen'); const pl = await r.json();
+    body = `<h3>📦 Pauschalen</h3>
+      <div class="admin-list">${pl.map(p=>`<div class="admin-item"><div><div class="admin-item-name">${p.name}${p.ist_lohnkosten?` <span style="font-size:10px;background:#3730a3;color:#c7d2fe;padding:1px 5px;border-radius:8px;">⚒️ Lohn</span>`:''}</div><div style="font-size:11px;color:var(--muted);">${p.einheit} · ${p.mwst}%</div></div><div class="admin-item-price">${p.preis.toFixed(2)} €</div><button class="btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deletePauschale('${p.id}')">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:8px 0;">Noch keine Pauschalen.</div>'}</div>
+      <hr style="border-color:var(--border);margin:10px 0;">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">NEUE PAUSCHALE</p>
+      <div class="form-row"><label>BEZEICHNUNG</label><input type="text" id="pName" placeholder="z.B. Pressgeräteeinsatz"></div>
+      <div class="form-grid-2"><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">PREIS (€ netto)</label><input type="number" id="pPreis" placeholder="30.00" step="0.01" inputmode="decimal"></div><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">EINHEIT</label><select id="pEinheit">${['Psch','Stk','m','m²','l','kg'].map(e=>`<option>${e}</option>`).join('')}</select></div></div>
+      <div class="form-row"><label>MWST</label><select id="pMwst"><option value="19">19%</option><option value="7">7%</option><option value="0">0%</option></select></div>
+      <div class="form-row" style="display:flex;align-items:center;gap:8px;flex-direction:row;"><input type="checkbox" id="pLohn" style="width:18px;height:18px;flex-shrink:0;"><label for="pLohn" style="margin:0;font-size:12px;">⚒️ Lohnkosten (wird in Lexoffice-Rechnung ausgewiesen)</label></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="savePauschale()">Hinzufügen</button></div>`;
+
+  } else if (tab === 'stufen') {
+    const r = await fetch('/api/stufen'); const sl = await r.json();
+    body = `<h3>👷 Mitarbeiter-Stufen</h3>
+      <div class="admin-list">${sl.map(s=>`<div class="admin-item"><div class="admin-item-name">${s.bezeichnung}</div><div class="admin-item-price">${s.stundenpreis.toFixed(2)} €/Std.</div><button class="btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteStufe('${s.id}')">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:8px 0;">Noch keine Stufen.</div>'}</div>
+      <hr style="border-color:var(--border);margin:10px 0;">
+      <div class="form-grid-2"><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">BEZEICHNUNG</label><input type="text" id="sBez" placeholder="Geselle"></div><div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;">€/STD. NETTO</label><input type="number" id="sPreis" placeholder="45.00" step="0.01" inputmode="decimal"></div></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="saveStufe()">Hinzufügen</button></div>`;
+
+  } else if (tab === 'vorlagen') {
+    const r = await fetch('/api/vorlagen'); const vl = await r.json();
+    body = `<h3>📋 Vorlagen</h3>
+      <div class="admin-list">${vl.map(v=>`<div class="admin-item"><div><div class="admin-item-name">${v.name}</div><div style="font-size:11px;color:var(--muted);">${v.typ}</div></div><button class="btn-secondary" style="font-size:11px;padding:4px 8px;" onclick="ladeVorlage('${v.id}')">Laden</button><button class="btn-danger" style="padding:4px 8px;font-size:11px;" onclick="deleteVorlage('${v.id}')">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:8px 0;">Noch keine Vorlagen.</div>'}</div>
+      <hr style="border-color:var(--border);margin:10px 0;">
+      <div class="form-row"><label>NAME DER VORLAGE</label><input type="text" id="vName" placeholder="z.B. Heizungswartung Standard"></div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button><button class="btn-primary" style="flex:1;" onclick="saveVorlage()">Aktuelles Formular speichern</button></div>`;
+
+  } else if (tab === 'export') {
+    body = `<h3>💾 Datensicherung</h3><p class="modal-sub">Alle Daten als JSON-Datei exportieren.</p>
+      <button class="btn-primary" onclick="exportData()">⬇️ Jetzt exportieren</button>
+      <div class="modal-btns" style="margin-top:10px;"><button class="btn-secondary" onclick="openSettings('start')">‹</button></div>`;
+
+  } else if (tab === 'log') {
+    let logHTML = '<div style="color:var(--muted);font-size:12px;">Keine Einträge.</div>';
+    try {
+      const r = await fetch('/api/export');
+      // Log is not in export, just show placeholder
+      logHTML = '<div style="font-size:12px;color:var(--muted);">Aktivitätslog ist in dieser Version nicht verfügbar.</div>';
+    } catch(e) {}
+    body = `<h3>📋 Aktivitätslog</h3>${logHTML}<div class="modal-btns" style="margin-top:10px;"><button class="btn-secondary" onclick="openSettings('start')">‹</button></div>`;
+
+  } else if (tab === 'sprache') {
+    body = `<h3>🌐 Sprache</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[['de','🇩🇪 Deutsch'],['en','🇬🇧 English']].map(([code,label])=>`<button class="card-btn${currentLang===code?' primary':''}" onclick="setLang('${code}')" style="${currentLang===code?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${label}</button>`).join('')}
+      </div>
+      <div class="modal-btns"><button class="btn-secondary" onclick="openSettings('start')">‹</button></div>`;
+
+  } else if (tab === 'push') {
+    body = `<h3>🔔 Push-Benachrichtigungen</h3>
+      <button class="btn-primary" onclick="requestPush()">🔔 Push aktivieren</button>
+      <hr style="border-color:var(--border);margin:14px 0;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Wartungserinnerungen laufen täglich um 07:00 Uhr automatisch. Hier manuell testen:</p>
+      <button class="card-btn" style="width:100%" onclick="manuellerWartungsCheck()">▶️ Wartungscheck jetzt ausführen</button>
+      <div id="checkStatus" class="status-msg" style="display:none;margin-top:8px;"></div>
+      <div class="modal-btns" style="margin-top:10px;"><button class="btn-secondary" onclick="openSettings('start')">‹</button></div>`;
+  }
+
+  content.innerHTML = body;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettingsModal() { document.getElementById('settingsModal').classList.remove('open'); }
+function closeModal(e) { if(e.target===document.getElementById('settingsModal')) closeSettingsModal(); }
+
+// ── EINSTELLUNGEN AKTIONEN ────────────────────────────────────────────────────
+async function uploadLogo() {
+  const f = document.getElementById('logoFile').files[0];
+  if (!f) return;
+  const fd = new FormData(); fd.append('logo', f);
+  const r = await fetch('/api/logo', {method:'POST', body:fd});
+  const d = await r.json();
+  if (d.ok) { appConfig = {...appConfig, hasLogo:true, logoBase64:d.logoBase64, logoMime:d.logoMime}; updateLogo(); closeSettingsModal(); }
+}
+
+async function deleteLogo() {
+  await fetch('/api/logo', {method:'DELETE'});
+  appConfig = {...appConfig, hasLogo:false, logoBase64:null}; updateLogo(); closeSettingsModal();
+}
+
+async function saveFirma() {
+  const firma = {name:document.getElementById('sName').value.trim(),strasse:document.getElementById('sStr').value.trim(),plz:document.getElementById('sPlz').value.trim(),ort:document.getElementById('sOrt').value.trim(),telefon:document.getElementById('sTel').value.trim(),email:document.getElementById('sEmail').value.trim(),ustNr:document.getElementById('sUst').value.trim()};
+  const r = await fetch('/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({firma})});
+  const d = await r.json();
+  if (d.ok) { appConfig.firma=firma; document.getElementById('headerFirmaName').textContent=firma.name; closeSettingsModal(); }
+}
+
+async function saveGmail() {
+  const user=document.getElementById('gUser').value.trim(), pass=document.getElementById('gPass').value.trim();
+  if (!user||!pass) return;
+  const r = await fetch('/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({gmail:{user,appPassword:pass}})});
+  const d = await r.json();
+  if (d.ok) { openSettings('start'); }
+}
+
+async function saveLexoffice() {
+  const key = document.getElementById('lxKey').value.trim();
+  if (!key) return;
+  const r = await fetch('/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({lexofficeApiKey:key})});
+  const d = await r.json();
+  const s = document.getElementById('lxStatus');
+  if (d.ok) { s.textContent='✅ Key gespeichert!'; s.className='status-msg success'; await loadConfig(); await loadKunden(); setTimeout(()=>closeSettingsModal(),1200); }
+  else { s.textContent='Fehler: '+d.error; s.className='status-msg error'; }
+}
+
+async function savePauschale() {
+  const name=document.getElementById('pName').value.trim();
+  if (!name) return;
+  await fetch('/api/pauschalen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, preis:parseFloat(document.getElementById('pPreis').value)||0, einheit:document.getElementById('pEinheit').value, mwst:parseInt(document.getElementById('pMwst').value), ist_lohnkosten:document.getElementById('pLohn').checked})});
+  await loadPauschalen(); openSettings('pauschalen');
+}
+
+async function deletePauschale(id) {
+  await fetch(`/api/pauschalen/${id}`, {method:'DELETE'});
+  await loadPauschalen(); openSettings('pauschalen');
+}
+
+async function saveStufe() {
+  const bez=document.getElementById('sBez').value.trim();
+  if (!bez) return;
+  await fetch('/api/stufen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({bezeichnung:bez, stundenpreis:parseFloat(document.getElementById('sPreis').value)||0})});
+  await loadStufen(); openSettings('stufen');
+}
+
+async function deleteStufe(id) {
+  await fetch(`/api/stufen/${id}`, {method:'DELETE'});
+  await loadStufen(); openSettings('stufen');
+}
+
+async function saveVorlage() {
+  const name=document.getElementById('vName').value.trim();
+  if (!name) return;
+  const data=collectFormData();
+  await fetch('/api/vorlagen', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, typ:currentTyp, data})});
+  openSettings('vorlagen');
+}
+
+async function ladeVorlage(id) {
+  const r=await fetch(`/api/vorlagen/${id}`);
+  const v=await r.json();
+  fillForm(v.data, v.typ);
+  closeSettingsModal();
+}
+
+async function deleteVorlage(id) {
+  await fetch(`/api/vorlagen/${id}`, {method:'DELETE'});
+  openSettings('vorlagen');
+}
+
+async function exportData() {
+  const r = await fetch('/api/export');
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`ahv-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
+}
+
+function setLang(code) {
+  currentLang = code; localStorage.setItem('lang', code); closeSettingsModal();
+}
+
+async function requestPush() {
+  if (!('Notification' in window)) return alert('Push nicht unterstützt');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') return alert('Push nicht erlaubt');
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(appConfig.vapidPublicKey) });
+  await fetch('/api/push/subscribe', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({subscription:sub})});
+  alert('✅ Push aktiviert!');
+}
+
+async function manuellerWartungsCheck() {
+  const s=document.getElementById('checkStatus');
+  s.textContent='Läuft...'; s.className='status-msg info'; s.style.display='block';
+  try { await fetch('/api/wartungen/check', {method:'POST'}); s.textContent='✅ Check ausgeführt'; s.className='status-msg success'; } catch(e) { s.textContent='Fehler'; s.className='status-msg error'; }
+}
+
+function urlBase64ToUint8Array(b) {
+  const p='='.repeat((4-b.length%4)%4),base64=(b+p).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=window.atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+function showStatus(id, msg, type) {
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=msg; el.className='status-msg '+type;
+  setTimeout(()=>el.className='status-msg',3000);
+}
+
+async function deleteAuftrag(id) {
+  if (!confirm('Auftrag löschen?')) return;
+  await fetch(`/api/auftraege/${id}`, {method:'DELETE'});
+  loadList(currentTab==='entwuerfe'?'entwurf':'abgeschickt');
+  closeForm();
+}
+</script>
+</body>
+</html>

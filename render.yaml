@@ -1,0 +1,21 @@
+# Render Blueprint für AHV-Digital
+# Phase 1.1: Free-Plan (zum Testen). Persistent Disk fehlt absichtlich,
+# wird in 1.2 zusammen mit dem Wechsel auf Starter ergänzt.
+services:
+  - type: web
+    name: ahv-digital
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+    # disk:
+    #   name: ahv-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
