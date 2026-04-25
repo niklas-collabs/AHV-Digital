@@ -17,6 +17,11 @@ services:
         value: 20
       - key: NODE_ENV
         value: production
+      # Render setzt NODE_ENV=production, was npm beim npm ci dazu bringt,
+      # devDependencies (Vite, tsc) zu skippen. NPM_CONFIG_INCLUDE=dev kehrt
+      # das um — ohne den Server-Runtime-Modus zu beruehren.
+      - key: NPM_CONFIG_INCLUDE
+        value: dev
     # disk:
     #   name: ahv-data
     #   mountPath: /opt/render/project/src/data
