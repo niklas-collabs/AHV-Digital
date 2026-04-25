@@ -58,9 +58,10 @@ export function App() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.1 — Setup</CardTitle>
+            <CardTitle>Phase 1.2 — Datenbank-Foundation</CardTitle>
             <CardDescription>
-              Fundament steht. Datenmodell, Auth, Aufträge & PDF folgen ab Phase 1.2.
+              SQLite-Schema steht, Migrations laufen automatisch, tägliches Backup ist geplant.
+              Auth, Settings und Aufträge folgen ab Phase 1.3.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -87,10 +88,16 @@ function HealthRow({ health }: { health: HealthState }) {
       </p>
     );
   }
+  const dbBadge =
+    health.data.db === 'ok' ? (
+      <span className="text-emerald-500">DB ok</span>
+    ) : (
+      <span className="text-destructive">DB error</span>
+    );
   return (
     <p className="flex items-center gap-2 text-sm text-emerald-500">
       <CheckCircle2 className="h-4 w-4" />
-      Server OK ({health.data.service} v{health.data.version})
+      Server OK ({health.data.service} v{health.data.version}) · {dbBadge}
     </p>
   );
 }
