@@ -8,7 +8,9 @@ services:
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: npm ci && npm run build
+    # --include=dev erzwingt devDeps (Vite, TS, tsc), die wir zum Bauen
+    # brauchen. Ohne den Flag skipt npm sie wegen NODE_ENV=production.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
