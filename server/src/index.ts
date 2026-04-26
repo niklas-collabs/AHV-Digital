@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
@@ -7,6 +8,10 @@ import type { HealthResponse } from '@ahv/shared';
 import { getDb, resolveDbPath } from './db/client.js';
 import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
+import { authRouter } from './routes/auth.js';
+import { requireAuth } from './middleware/auth.js';
+import { errorHandler } from './middleware/error-handler.js';
+import { logger } from './lib/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,26 +23,27 @@ const isDev = process.env.NODE_ENV !== 'production';
 const db = getDb();
 const migrationResult = runMigrations(db);
 if (migrationResult.applied.length > 0) {
-  console.log(`[migrations] applied: ${migrationResult.applied.join(', ')}`);
+  logger.info('migrations.applied', { files: migrationResult.applied });
 } else {
-  console.log(`[migrations] up to date (${migrationResult.skipped.length} schon angewandt)`);
+  logger.info('migrations.up_to_date', { skipped: migrationResult.skipped.length });
 }
 
 // === Backup-Cron registrieren ===
 const dbPath = resolveDbPath();
 const backupDir = path.join(path.dirname(dbPath), 'backups');
 startBackupCron(dbPath, backupDir);
-console.log(`[backup] cron registriert (taeglich 03:00 UTC) — Ziel: ${backupDir}`);
+logger.info('backup.scheduled', { schedule: '0 3 * * * UTC', dir: backupDir });
 
 // === Express ===
 const app = express();
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 
 if (isDev) {
   app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 }
 
-// API-Routen
+// === Public-Routen (kein Auth) ===
 app.get('/api/health', (_req, res) => {
   let dbStatus: 'ok' | 'error' = 'ok';
   try {
@@ -54,7 +60,14 @@ app.get('/api/health', (_req, res) => {
   res.json(body);
 });
 
-// In Production: gebauten Client servieren + SPA-Fallback.
+app.use('/api/auth', authRouter);
+
+// === Geschuetzte Routen — alles unter /api ab hier braucht Auth ===
+app.use('/api', requireAuth);
+
+// (Hier folgen ab 1.4+ die geschuetzten Routen: kunden, auftraege, etc.)
+
+// === Static-Serve (Production) ===
 if (!isDev) {
   const clientDist = path.resolve(__dirname, '../../client/dist');
   if (existsSync(clientDist)) {
@@ -64,11 +77,13 @@ if (!isDev) {
       res.sendFile(path.join(clientDist, 'index.html'));
     });
   } else {
-    console.warn(`[ahv-digital] client/dist nicht gefunden unter ${clientDist}`);
+    logger.warn('client_dist_missing', { path: clientDist });
   }
 }
 
+// === Error-Handler ganz am Ende ===
+app.use(errorHandler);
+
 app.listen(PORT, () => {
-  const mode = isDev ? 'dev' : 'prod';
-  console.log(`[ahv-digital] Server laeuft auf http://localhost:${PORT} (${mode})`);
+  logger.info('server.started', { port: PORT, mode: isDev ? 'dev' : 'prod' });
 });

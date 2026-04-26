@@ -245,3 +245,19 @@ export interface HealthResponse {
   version: string;
   db: 'ok' | 'error';
 }
+
+export interface AuthStatusResponse {
+  needsSetup: boolean;
+  authenticated: boolean;
+  lockedUntil: string | null;
+}
+
+/**
+ * Standard-Fehler-Antwort der API. Spezifische Endpoints koennen
+ * zusaetzliche Felder mitgeben (z.B. attemptsLeft, lockedUntil bei Auth).
+ */
+export interface ApiErrorResponse {
+  error: string;
+  code: string;
+  [key: string]: unknown;
+}

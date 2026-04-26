@@ -15,6 +15,10 @@ services:
         value: 20
       - key: NODE_ENV
         value: production
+      # JWT-Secret wird von Render einmalig generiert und gemerkt — Tokens
+      # bleiben dadurch ueber Deploys hinweg gueltig.
+      - key: JWT_SECRET
+        generateValue: true
     # disk:
     #   name: ahv-data
     #   mountPath: /opt/render/project/src/data
