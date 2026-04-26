@@ -13,6 +13,8 @@ import { FirmaForm } from '@/components/settings/FirmaForm';
 import { ThemeSection } from '@/components/settings/ThemeSection';
 import { LogoUploadSection } from '@/components/settings/LogoUploadSection';
 import { PinChangeForm } from '@/components/settings/PinChangeForm';
+import { StufenSection } from '@/components/settings/StufenSection';
+import { PauschalenSection } from '@/components/settings/PauschalenSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -58,6 +60,30 @@ export function SettingsPage() {
             ) : (
               <LogoUploadSection current={config?.logo ?? null} />
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Mitarbeiter-Stufen</CardTitle>
+            <CardDescription>
+              Lohnstufen mit Stundenpreis. Reihenfolge bestimmt die Anzeige im Auftrag.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StufenSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pauschalen</CardTitle>
+            <CardDescription>
+              Vordefinierte Posten mit Festpreis (z.B. Anfahrt, Pressgeräteeinsatz).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PauschalenSection />
           </CardContent>
         </Card>
 

@@ -11,6 +11,8 @@ import { startBackupCron } from './services/backup-service.js';
 import { authRouter } from './routes/auth.js';
 import { configRouter } from './routes/config.js';
 import { logoRouter } from './routes/logo.js';
+import { pauschaleRouter } from './routes/pauschale.js';
+import { stufeRouter } from './routes/stufe.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
@@ -69,7 +71,9 @@ app.use('/api', requireAuth);
 
 app.use('/api/config', configRouter);
 app.use('/api/logo', logoRouter);
-// (Hier folgen ab 1.5+ die geschuetzten Routen: kunden, auftraege, etc.)
+app.use('/api/stufen', stufeRouter);
+app.use('/api/pauschalen', pauschaleRouter);
+// (Hier folgen ab 1.6+ die geschuetzten Routen: kunden, auftraege, etc.)
 
 // === Static-Serve (Production) ===
 if (!isDev) {

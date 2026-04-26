@@ -74,10 +74,10 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.4 — Settings & Firma</CardTitle>
+            <CardTitle>Phase 1.5 — Stammdaten</CardTitle>
             <CardDescription>
-              Firmendaten, Logo, Theme und PIN-Wechsel verfügbar unter „Einstellungen".
-              Stammdaten (Stufen / Pauschalen) folgen in 1.5, Aufträge ab 1.7.
+              Mitarbeiter-Stufen und Pauschalen verwalten in den „Einstellungen".
+              Kunden folgen in 1.6, Aufträge ab 1.7.
             </CardDescription>
           </CardHeader>
           <CardContent>
