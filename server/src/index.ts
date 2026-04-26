@@ -9,6 +9,8 @@ import { getDb, resolveDbPath } from './db/client.js';
 import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
 import { authRouter } from './routes/auth.js';
+import { configRouter } from './routes/config.js';
+import { logoRouter } from './routes/logo.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
@@ -65,7 +67,9 @@ app.use('/api/auth', authRouter);
 // === Geschuetzte Routen — alles unter /api ab hier braucht Auth ===
 app.use('/api', requireAuth);
 
-// (Hier folgen ab 1.4+ die geschuetzten Routen: kunden, auftraege, etc.)
+app.use('/api/config', configRouter);
+app.use('/api/logo', logoRouter);
+// (Hier folgen ab 1.5+ die geschuetzten Routen: kunden, auftraege, etc.)
 
 // === Static-Serve (Production) ===
 if (!isDev) {

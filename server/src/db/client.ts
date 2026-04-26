@@ -40,6 +40,15 @@ export function resolveDbPath(): string {
 }
 
 /**
+ * Verzeichnis fuer hochgeladene Dateien (Logo, Fotos). Default: data/uploads
+ * relativ zum DB-Verzeichnis. Override via UPLOADS_DIR env var.
+ */
+export function resolveUploadsDir(): string {
+  if (process.env.UPLOADS_DIR) return process.env.UPLOADS_DIR;
+  return path.join(path.dirname(resolveDbPath()), 'uploads');
+}
+
+/**
  * Ueberschreibt das Singleton (nur fuer Tests).
  */
 export function _setDbForTests(db: Database.Database | null): void {

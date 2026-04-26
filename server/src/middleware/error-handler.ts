@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
 import { AuthError } from '../services/auth-service.js';
+import { LogoError } from '../services/logo-service.js';
 import { logger } from '../lib/logger.js';
 
 /**
@@ -35,6 +37,18 @@ export function errorHandler(
       code: err.code,
       ...err.meta,
     });
+    return;
+  }
+
+  if (err instanceof MulterError) {
+    const code = err.code === 'LIMIT_FILE_SIZE' ? 'TOO_LARGE' : 'UPLOAD_ERROR';
+    const message = err.code === 'LIMIT_FILE_SIZE' ? 'Datei zu gross (max 1 MB)' : err.message;
+    res.status(400).json({ error: message, code });
+    return;
+  }
+
+  if (err instanceof LogoError) {
+    res.status(400).json({ error: err.message, code: err.code });
     return;
   }
 

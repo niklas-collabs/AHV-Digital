@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, LogOut, Moon, Sun, Wrench, XCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle2, LogOut, Moon, Settings, Sun, Wrench, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import type { HealthResponse } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,18 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Toaster, toast } from '@/components/ui/sonner';
 import { apiClient } from '@/lib/api';
 import { AUTH_STATUS_QUERY_KEY } from '@/hooks/useAuthStatus';
+import { useThemeStore } from '@/stores/theme-store';
 
 export function HomePage() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggle);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
 
   const healthQuery = useQuery({
     queryKey: ['health'],
@@ -51,10 +48,15 @@ export function HomePage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={toggleTheme}
               aria-label="Theme wechseln"
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button asChild variant="ghost" size="icon" aria-label="Einstellungen">
+              <Link to="/settings">
+                <Settings className="h-5 w-5" />
+              </Link>
             </Button>
             <Button
               variant="ghost"
@@ -72,10 +74,10 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.3 — Auth</CardTitle>
+            <CardTitle>Phase 1.4 — Settings & Firma</CardTitle>
             <CardDescription>
-              PIN-Login, JWT in HTTP-only-Cookie, Brute-Force-Schutz aktiv.
-              Aufträge & Stammdaten ab Phase 1.4.
+              Firmendaten, Logo, Theme und PIN-Wechsel verfügbar unter „Einstellungen".
+              Stammdaten (Stufen / Pauschalen) folgen in 1.5, Aufträge ab 1.7.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,8 +89,6 @@ export function HomePage() {
           </CardContent>
         </Card>
       </main>
-
-      <Toaster />
     </div>
   );
 }
