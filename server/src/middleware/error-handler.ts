@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { MulterError } from 'multer';
 import { AuthError } from '../services/auth-service.js';
 import { LogoError } from '../services/logo-service.js';
+import { KundeError } from '../services/kunde-service.js';
 import { PauschaleError } from '../services/pauschale-service.js';
 import { StufeError } from '../services/stufe-service.js';
 import { logger } from '../lib/logger.js';
@@ -54,7 +55,7 @@ export function errorHandler(
     return;
   }
 
-  if (err instanceof StufeError || err instanceof PauschaleError) {
+  if (err instanceof StufeError || err instanceof PauschaleError || err instanceof KundeError) {
     const status = err.code === 'NOT_FOUND' ? 404 : err.code === 'IN_USE' ? 409 : 400;
     res.status(status).json({ error: err.message, code: err.code });
     return;

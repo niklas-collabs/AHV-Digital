@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, LogOut, Moon, Settings, Sun, Wrench, XCircle } from 'lucide-react';
+import { CheckCircle2, LogOut, Moon, Settings, Sun, Users, Wrench, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { HealthResponse } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -74,18 +74,24 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.5 — Stammdaten</CardTitle>
+            <CardTitle>Phase 1.6 — Kunden</CardTitle>
             <CardDescription>
-              Mitarbeiter-Stufen und Pauschalen verwalten in den „Einstellungen".
-              Kunden folgen in 1.6, Aufträge ab 1.7.
+              Kunden-Verwaltung mit Suche, Privat/Firma-Toggle und FK-Schutz beim Loeschen.
+              Aufträge folgen ab 1.7.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <HealthRow
               status={healthQuery.status}
               data={healthQuery.data}
               error={healthQuery.error}
             />
+            <Button asChild>
+              <Link to="/kunden">
+                <Users className="h-4 w-4" />
+                Kunden verwalten
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </main>

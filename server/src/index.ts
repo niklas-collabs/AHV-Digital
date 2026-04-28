@@ -10,6 +10,7 @@ import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
 import { authRouter } from './routes/auth.js';
 import { configRouter } from './routes/config.js';
+import { kundeRouter } from './routes/kunde.js';
 import { logoRouter } from './routes/logo.js';
 import { pauschaleRouter } from './routes/pauschale.js';
 import { stufeRouter } from './routes/stufe.js';
@@ -73,7 +74,8 @@ app.use('/api/config', configRouter);
 app.use('/api/logo', logoRouter);
 app.use('/api/stufen', stufeRouter);
 app.use('/api/pauschalen', pauschaleRouter);
-// (Hier folgen ab 1.6+ die geschuetzten Routen: kunden, auftraege, etc.)
+app.use('/api/kunden', kundeRouter);
+// (Hier folgt ab 1.7 die geschuetzte Route fuer Auftraege)
 
 // === Static-Serve (Production) ===
 if (!isDev) {

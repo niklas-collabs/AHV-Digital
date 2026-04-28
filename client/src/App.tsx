@@ -5,6 +5,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { SetupPage } from '@/pages/SetupPage';
 import { HomePage } from '@/pages/HomePage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { KundenPage } from '@/pages/KundenPage';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { Toaster } from '@/components/ui/sonner';
 import { applyThemeToDocument, useThemeStore } from '@/stores/theme-store';
@@ -23,6 +24,7 @@ export function App() {
         <Route path="/login" element={<PublicGate kind="login" />} />
         <Route element={<ProtectedGate />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/kunden" element={<KundenPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
