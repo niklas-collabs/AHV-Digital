@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
   Auftrag,
@@ -335,6 +335,20 @@ export function AuftragFormPage() {
               aria-label="Löschen"
             >
               <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
+          {isEdit && existing && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() =>
+                window.open(`/api/auftraege/${existing.id}/pdf`, '_blank', 'noopener')
+              }
+              aria-label="PDF öffnen"
+              title="PDF öffnen"
+            >
+              <FileDown className="h-4 w-4" />
             </Button>
           )}
           <Button

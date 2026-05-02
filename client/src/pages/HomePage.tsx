@@ -84,10 +84,10 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.7 — Aufträge</CardTitle>
+            <CardTitle>Phase 1.8 — PDF-Export</CardTitle>
             <CardDescription>
-              Arbeitszettel, Angebote, Lieferscheine mit Mitarbeiter-/Material-Zeilen,
-              Pauschalen-Chips und Abschicken. PDF-Export folgt in 1.8.
+              Arbeitszettel mit Unterschriftsfeld, Angebot mit Preis-Summen, Lieferschein
+              ohne Preise. PDF-Symbol an jedem Auftrag öffnet die Druckansicht.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

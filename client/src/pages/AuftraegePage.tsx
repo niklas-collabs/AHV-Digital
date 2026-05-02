@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   ClipboardList,
+  FileDown,
   FileText,
   Package,
   Plus,
@@ -160,6 +161,16 @@ function AuftragRow({ auftrag, onDelete }: AuftragRowProps) {
           {auftrag.datum} · {kundeName || 'Kein Kunde'}
         </p>
       </Link>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => window.open(`/api/auftraege/${auftrag.id}/pdf`, '_blank', 'noopener')}
+        aria-label="PDF öffnen"
+        title="PDF öffnen"
+      >
+        <FileDown className="h-4 w-4" />
+      </Button>
       <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Löschen">
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>
