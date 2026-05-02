@@ -37,7 +37,7 @@ describe('config-service', () => {
   });
 
   describe('getAllConfig', () => {
-    it('liefert null fuer alle Keys auf leerer DB', () => {
+    it('liefert null für alle Keys auf leerer DB', () => {
       const db = makeDb();
       const all = getAllConfig(db);
       expect(all.firma).toBeNull();
@@ -46,7 +46,7 @@ describe('config-service', () => {
       expect(all.lexoffice_api_key).toBeNull();
     });
 
-    it('liefert gesetzte Werte zurueck', () => {
+    it('liefert gesetzte Werte zurück', () => {
       const db = makeDb();
       setConfig(db, 'theme_default', 'dark');
       const all = getAllConfig(db);
@@ -111,7 +111,7 @@ describe('config-service', () => {
       ).toThrow(ZodError);
     });
 
-    it('lehnt firma mit ungueltiger E-Mail ab', () => {
+    it('lehnt firma mit ungültiger E-Mail ab', () => {
       const db = makeDb();
       expect(() =>
         setConfig(db, 'firma', {
@@ -145,7 +145,7 @@ describe('config-service', () => {
   });
 
   describe('upsert / delete', () => {
-    it('ueberschreibt vorhandenen Wert', () => {
+    it('überschreibt vorhandenen Wert', () => {
       const db = makeDb();
       setConfig(db, 'lexoffice_api_key', 'key-1');
       setConfig(db, 'lexoffice_api_key', 'key-2');

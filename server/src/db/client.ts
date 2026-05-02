@@ -7,7 +7,7 @@ let dbInstance: Database.Database | null = null;
 /**
  * Liefert die SQLite-Datenbank als Singleton. Beim ersten Aufruf wird die
  * Datei geoeffnet (falls noetig erstellt), das Verzeichnis sichergestellt
- * und die ueblichen PRAGMAs gesetzt.
+ * und die üblichen PRAGMAs gesetzt.
  *
  * DB-Pfad kommt aus DB_PATH (env), default `data/ahv.db` relativ zum
  * Arbeitsverzeichnis.
@@ -40,7 +40,7 @@ export function resolveDbPath(): string {
 }
 
 /**
- * Verzeichnis fuer hochgeladene Dateien (Logo, Fotos). Default: data/uploads
+ * Verzeichnis für hochgeladene Dateien (Logo, Fotos). Default: data/uploads
  * relativ zum DB-Verzeichnis. Override via UPLOADS_DIR env var.
  */
 export function resolveUploadsDir(): string {
@@ -49,7 +49,7 @@ export function resolveUploadsDir(): string {
 }
 
 /**
- * Ueberschreibt das Singleton (nur fuer Tests).
+ * Überschreibt das Singleton (nur für Tests).
  */
 export function _setDbForTests(db: Database.Database | null): void {
   dbInstance = db;

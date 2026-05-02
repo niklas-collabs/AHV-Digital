@@ -120,7 +120,7 @@ export function MaterialRows({ rows, onChange, disabled }: MaterialRowsProps) {
         disabled={disabled}
       >
         <Plus className="h-4 w-4" />
-        Material hinzufuegen
+        Material hinzufügen
       </Button>
     </div>
   );

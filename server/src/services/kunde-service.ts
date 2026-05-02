@@ -17,7 +17,7 @@ export class KundeError extends Error {
 // Felder die mit '' default sind, normalisieren wir bei Empty zu null.
 
 const baseFields = {
-  email: z.string().email('Ungueltige E-Mail').or(z.literal('')).optional(),
+  email: z.string().email('Ungültige E-Mail').or(z.literal('')).optional(),
   telefon: z.string().optional(),
   strasse: z.string().optional(),
   plz: z.string().optional(),
@@ -172,7 +172,7 @@ export function deleteKunde(db: Database.Database, id: string): void {
   if (!existing) {
     throw new KundeError('NOT_FOUND', 'Kunde nicht gefunden');
   }
-  // FK-Check vorab fuer schoene Fehlermeldung — sonst bekaeme der Client einen
+  // FK-Check vorab für schoene Fehlermeldung — sonst bekaeme der Client einen
   // SQLITE_CONSTRAINT-Fehler.
   const linked = db
     .prepare('SELECT COUNT(*) as count FROM auftrag WHERE kunde_id = ?')
@@ -180,7 +180,7 @@ export function deleteKunde(db: Database.Database, id: string): void {
   if (linked.count > 0) {
     throw new KundeError(
       'IN_USE',
-      `Kunde hat ${linked.count} verknuepfte(n) Auftrag/Auftraege und kann nicht geloescht werden`,
+      `Kunde hat ${linked.count} verknüpfte(n) Auftrag/Aufträge und kann nicht gelöscht werden`,
     );
   }
   db.prepare('DELETE FROM kunde WHERE id = ?').run(id);

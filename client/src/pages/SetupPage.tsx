@@ -56,7 +56,7 @@ export function SetupPage() {
       setErrorMsg(null);
       setupMutation.mutate(pin);
     } else {
-      setErrorMsg('PINs stimmen nicht ueberein, bitte neu eingeben');
+      setErrorMsg('PINs stimmen nicht überein, bitte neu eingeben');
       reset();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

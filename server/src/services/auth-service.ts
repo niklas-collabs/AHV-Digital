@@ -22,7 +22,7 @@ function getJwtSecret(): Uint8Array {
       throw new Error('JWT_SECRET muss in production gesetzt und mind. 32 Zeichen lang sein');
     }
     const random = randomBytes(32).toString('hex');
-    logger.warn('JWT_SECRET nicht gesetzt — generiere zufaelligen Dev-Secret. Tokens werden bei jedem Restart ungueltig.');
+    logger.warn('JWT_SECRET nicht gesetzt — generiere zufaelligen Dev-Secret. Tokens werden bei jedem Restart ungültig.');
     cachedSecret = new TextEncoder().encode(random);
   } else {
     cachedSecret = new TextEncoder().encode(secret);
@@ -31,8 +31,8 @@ function getJwtSecret(): Uint8Array {
 }
 
 /**
- * Nur fuer Tests: Secret-Cache leeren, damit ein frisches JWT_SECRET (env)
- * beim naechsten Aufruf wieder gelesen wird.
+ * Nur für Tests: Secret-Cache leeren, damit ein frisches JWT_SECRET (env)
+ * beim nächsten Aufruf wieder gelesen wird.
  */
 export function _resetJwtSecretCache(): void {
   cachedSecret = null;
@@ -224,7 +224,7 @@ export async function login(db: Database.Database, pin: string): Promise<LoginRe
     throw new AuthError('INVALID_PIN', 'Falscher PIN', { attemptsLeft });
   }
 
-  // Erfolg → Counter zuruecksetzen
+  // Erfolg → Counter zurücksetzen
   db.prepare('UPDATE auth SET failed_attempts = 0, locked_until = NULL WHERE id = 1').run();
   logger.info('auth.login_success');
 

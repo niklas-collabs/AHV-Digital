@@ -54,7 +54,7 @@ export function LogoUploadSection({ current }: LogoUploadSectionProps) {
       toast.success('Logo entfernt');
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Loeschen fehlgeschlagen');
+      toast.error(err instanceof ApiError ? err.message : 'Löschen fehlgeschlagen');
     },
   });
 

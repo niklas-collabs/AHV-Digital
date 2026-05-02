@@ -64,7 +64,7 @@ export function PinPad({ value, onChange, maxLength = 4, disabled = false }: Pin
           disabled={disabled || value.length === 0}
           onClick={backspace}
           className="h-14"
-          aria-label="Loeschen"
+          aria-label="Löschen"
         >
           <Delete className="h-5 w-5" />
         </Button>

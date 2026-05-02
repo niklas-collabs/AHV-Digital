@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Default-Verzeichnis fuer die SQL-Migrations. Funktioniert sowohl im
+ * Default-Verzeichnis für die SQL-Migrations. Funktioniert sowohl im
  * tsx-Dev-Modus (zeigt auf src/.../sql) als auch nach tsc-Build (zeigt auf
  * dist/.../sql — Files werden via scripts/copy-sql.js kopiert).
  */
@@ -20,7 +20,7 @@ export interface MigrationResult {
 
 /**
  * Liest alle .sql-Dateien aus sqlDir, sortiert sie nach Dateiname und
- * fuehrt jede aus, die noch nicht in `_migrations` registriert ist.
+ * führt jede aus, die noch nicht in `_migrations` registriert ist.
  * Jede Migration laeuft in eigener Transaction; bei Fehler Rollback.
  */
 export function runMigrations(

@@ -253,7 +253,7 @@ export interface AuthStatusResponse {
 }
 
 /**
- * Standard-Fehler-Antwort der API. Spezifische Endpoints koennen
+ * Standard-Fehler-Antwort der API. Spezifische Endpoints können
  * zusaetzliche Felder mitgeben (z.B. attemptsLeft, lockedUntil bei Auth).
  */
 export interface ApiErrorResponse {

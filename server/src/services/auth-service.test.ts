@@ -139,7 +139,7 @@ describe('auth-service', () => {
       expect(new Date(row.locked_until!).getTime()).toBeGreaterThan(Date.now());
     });
 
-    it('setzt counter zurueck bei Erfolg', async () => {
+    it('setzt counter zurück bei Erfolg', async () => {
       const db = makeDb();
       await setupPin(db, { pin: '1234' });
       await expect(login(db, '0000')).rejects.toThrow();
@@ -175,12 +175,12 @@ describe('auth-service', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('weist ungueltigen Token zurueck', async () => {
+    it('weist ungültigen Token zurück', async () => {
       const result = await verifyToken('not.a.valid.jwt');
       expect(result.valid).toBe(false);
     });
 
-    it('weist Token mit anderem Secret zurueck', async () => {
+    it('weist Token mit anderem Secret zurück', async () => {
       const token = await generateToken();
 
       // Anderes Secret
@@ -203,7 +203,7 @@ describe('auth-service', () => {
       });
     });
 
-    it('meldet authenticated=true mit gueltigem Token', async () => {
+    it('meldet authenticated=true mit gültigem Token', async () => {
       const db = makeDb();
       await setupPin(db, { pin: '1234' });
       const result = await login(db, '1234');

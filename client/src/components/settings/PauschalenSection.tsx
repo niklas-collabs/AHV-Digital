@@ -87,14 +87,14 @@ export function PauschalenSection() {
                 size="icon"
                 variant="ghost"
                 onClick={() => {
-                  if (confirm(`"${p.name}" wirklich loeschen?`)) {
+                  if (confirm(`"${p.name}" wirklich löschen?`)) {
                     remove.mutate(p.id, {
                       onError: (err) =>
                         toast.error(err instanceof ApiError ? err.message : 'Fehler'),
                     });
                   }
                 }}
-                aria-label="Loeschen"
+                aria-label="Löschen"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
@@ -105,7 +105,7 @@ export function PauschalenSection() {
 
       <Button type="button" variant="outline" onClick={() => setCreating(true)}>
         <Plus className="h-4 w-4" />
-        Pauschale hinzufuegen
+        Pauschale hinzufügen
       </Button>
 
       {creating && (
@@ -243,7 +243,7 @@ function PauschaleDialog({ pauschale, onClose }: PauschaleDialogProps) {
             <span className="flex-1">
               <span className="block text-sm font-medium">Als Lohnkosten zaehlen</span>
               <span className="block text-xs text-muted-foreground">
-                Fuer Steuer-Reporting nach §35a EStG
+                Für Steuer-Reporting nach §35a EStG
               </span>
             </span>
           </button>

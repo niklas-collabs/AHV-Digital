@@ -232,7 +232,7 @@ export function updateAuftrag(
     throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
   }
 
-  // Snapshot nur erneuern, wenn sich kunde_id aendert. Damit bleibt ein
+  // Snapshot nur erneuern, wenn sich kunde_id ändert. Damit bleibt ein
   // abgeschickter Auftrag mit altem Kunden-Stand konsistent.
   let snapshotJson: string;
   let kundeIdToStore = input.kunde_id;
@@ -291,8 +291,8 @@ export function deleteAuftrag(db: Database.Database, id: string): void {
 
 /**
  * Setzt status='abgeschickt' und abgeschickt_am=jetzt. Idempotent — wenn
- * schon abgeschickt, bleibt das Datum unveraendert (sonst koennte ein
- * versehentlicher zweiter Klick den Versand-Zeitpunkt ueberschreiben).
+ * schon abgeschickt, bleibt das Datum unverändert (sonst könnte ein
+ * versehentlicher zweiter Klick den Versand-Zeitpunkt überschreiben).
  */
 export function abschickenAuftrag(db: Database.Database, id: string): Auftrag {
   const existing = getAuftrag(db, id);

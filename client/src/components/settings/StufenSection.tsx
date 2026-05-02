@@ -97,14 +97,14 @@ export function StufenSection() {
                 size="icon"
                 variant="ghost"
                 onClick={() => {
-                  if (confirm(`"${s.bezeichnung}" wirklich loeschen?`)) {
+                  if (confirm(`"${s.bezeichnung}" wirklich löschen?`)) {
                     remove.mutate(s.id, {
                       onError: (err) =>
                         toast.error(err instanceof ApiError ? err.message : 'Fehler'),
                     });
                   }
                 }}
-                aria-label="Loeschen"
+                aria-label="Löschen"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
@@ -115,7 +115,7 @@ export function StufenSection() {
 
       <Button type="button" variant="outline" onClick={() => setCreating(true)}>
         <Plus className="h-4 w-4" />
-        Stufe hinzufuegen
+        Stufe hinzufügen
       </Button>
 
       {creating && (

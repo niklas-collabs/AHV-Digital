@@ -156,10 +156,10 @@ export function AuftragFormPage() {
 
   const handleDelete = () => {
     if (!existing) return;
-    if (!confirm(`"${existing.titel || '(ohne Titel)'}" wirklich loeschen?`)) return;
+    if (!confirm(`"${existing.titel || '(ohne Titel)'}" wirklich löschen?`)) return;
     remove.mutate(existing.id, {
       onSuccess: () => {
-        toast.success('Geloescht');
+        toast.success('Gelöscht');
         navigate('/auftraege', { replace: true });
       },
       onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Fehler'),
@@ -177,7 +177,7 @@ export function AuftragFormPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurueck">
+          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
             <Link to="/auftraege">
               <ArrowLeft className="h-5 w-5" />
             </Link>
@@ -332,7 +332,7 @@ export function AuftragFormPage() {
               size="icon"
               onClick={handleDelete}
               disabled={disabled}
-              aria-label="Loeschen"
+              aria-label="Löschen"
             >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>

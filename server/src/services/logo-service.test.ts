@@ -63,7 +63,7 @@ describe('logo-service', () => {
       expect(() => saveLogo(db, TINY_PNG, 'image/gif', tmpDir)).toThrow(LogoError);
     });
 
-    it('ueberschreibt bestehendes Logo (gleicher MIME)', () => {
+    it('überschreibt bestehendes Logo (gleicher MIME)', () => {
       const db = makeDb();
       saveLogo(db, TINY_PNG, 'image/png', tmpDir);
       const buf2 = Buffer.concat([TINY_PNG, Buffer.from('extra')]);
@@ -72,7 +72,7 @@ describe('logo-service', () => {
       expect(stored.length).toBe(buf2.length);
     });
 
-    it('loescht alte Datei beim Format-Wechsel', () => {
+    it('löscht alte Datei beim Format-Wechsel', () => {
       const db = makeDb();
       saveLogo(db, TINY_PNG, 'image/png', tmpDir);
       saveLogo(db, TINY_JPG, 'image/jpeg', tmpDir);
@@ -106,7 +106,7 @@ describe('logo-service', () => {
   });
 
   describe('removeLogo', () => {
-    it('loescht Datei und config-Eintrag', () => {
+    it('löscht Datei und config-Eintrag', () => {
       const db = makeDb();
       saveLogo(db, TINY_PNG, 'image/png', tmpDir);
       removeLogo(db, tmpDir);

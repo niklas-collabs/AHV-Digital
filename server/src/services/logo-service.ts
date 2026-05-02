@@ -13,9 +13,9 @@ const LOGO_FILENAMES: Record<string, string> = {
 };
 
 /**
- * Multer-Middleware fuer Logo-Upload: in-memory-Storage, MIME-Filter,
+ * Multer-Middleware für Logo-Upload: in-memory-Storage, MIME-Filter,
  * 1 MB Groessen-Limit. Bei Verstoss wirft multer einen Error den der
- * error-handler in 400 uebersetzt.
+ * error-handler in 400 übersetzt.
  */
 export const logoUploadMiddleware = multer({
   storage: multer.memoryStorage(),
@@ -40,8 +40,8 @@ export class LogoError extends Error {
 }
 
 /**
- * Speichert den Buffer als Logo-Datei in uploadsDir, ueberschreibt
- * vorhandenes Logo (auch bei MIME-Wechsel — alte Datei wird geloescht).
+ * Speichert den Buffer als Logo-Datei in uploadsDir, überschreibt
+ * vorhandenes Logo (auch bei MIME-Wechsel — alte Datei wird gelöscht).
  */
 export function saveLogo(
   db: Database.Database,
@@ -70,7 +70,7 @@ export function saveLogo(
 }
 
 /**
- * Loescht die Logo-Datei und entfernt den config-Eintrag. Idempotent.
+ * Löscht die Logo-Datei und entfernt den config-Eintrag. Idempotent.
  */
 export function removeLogo(db: Database.Database, uploadsDir: string): void {
   removeLogoFile(db, uploadsDir);

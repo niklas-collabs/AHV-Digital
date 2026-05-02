@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 // Discriminated-Union analog Backend.
 const baseFields = {
-  email: z.string().email('Ungueltige E-Mail').or(z.literal('')).optional(),
+  email: z.string().email('Ungültige E-Mail').or(z.literal('')).optional(),
   telefon: z.string().optional(),
   strasse: z.string().optional(),
   plz: z.string().optional(),

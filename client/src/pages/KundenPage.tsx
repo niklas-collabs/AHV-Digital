@@ -30,7 +30,7 @@ export function KundenPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurueck">
+          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
             <Link to="/">
               <ArrowLeft className="h-5 w-5" />
             </Link>
@@ -67,7 +67,7 @@ export function KundenPage() {
                 kunde={k}
                 onEdit={() => setEditing(k)}
                 onDelete={() => {
-                  if (confirm(`"${displayName(k)}" wirklich loeschen?`)) {
+                  if (confirm(`"${displayName(k)}" wirklich löschen?`)) {
                     remove.mutate(k.id, {
                       onError: (err) => {
                         if (err instanceof ApiError && err.code === 'IN_USE') {
@@ -112,7 +112,7 @@ function KundeRow({ kunde, onEdit, onDelete }: KundeRowProps) {
       <Button type="button" variant="ghost" size="icon" onClick={onEdit} aria-label="Bearbeiten">
         <Pencil className="h-4 w-4" />
       </Button>
-      <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Loeschen">
+      <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Löschen">
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>
     </li>

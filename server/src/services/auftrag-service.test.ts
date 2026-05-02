@@ -61,7 +61,7 @@ describe('auftrag-service', () => {
       ).toThrow(ZodError);
     });
 
-    it('akzeptiert Defaults fuer Listen', () => {
+    it('akzeptiert Defaults für Listen', () => {
       const parsed = auftragInputSchema.parse({
         typ: 'angebot',
         titel: 'X',
@@ -113,7 +113,7 @@ describe('auftrag-service', () => {
       expect(a.kunde_snapshot.plz).toBe('12345');
     });
 
-    it('snapshot bleibt unveraendert wenn Kunde sich aendert', () => {
+    it('snapshot bleibt unverändert wenn Kunde sich ändert', () => {
       const db = makeDb();
       const k = createKunde(db, {
         typ: 'privat',
@@ -123,11 +123,11 @@ describe('auftrag-service', () => {
       const a = createAuftrag(db, baseInput({ kunde_id: k.id }));
       expect(a.kunde_snapshot.nachname).toBe('Mustermann');
 
-      // Kunde aendert sich
+      // Kunde ändert sich
       updateKunde(db, k.id, {
         typ: 'privat',
         vorname: 'Max',
-        nachname: 'Geaendert',
+        nachname: 'Geändert',
       });
 
       // Auftrag aktualisieren OHNE kunde_id-Wechsel — Snapshot soll alt bleiben
@@ -153,7 +153,7 @@ describe('auftrag-service', () => {
       expect(updated.kunde_snapshot.nachname).toBe('Schmidt');
     });
 
-    it('update wirft NOT_FOUND fuer unbekannte ID', () => {
+    it('update wirft NOT_FOUND für unbekannte ID', () => {
       const db = makeDb();
       expect(() => updateAuftrag(db, 'nope', baseInput())).toThrow(AuftragError);
     });
@@ -165,7 +165,7 @@ describe('auftrag-service', () => {
       expect(getAuftrag(db, a.id)).toBeNull();
     });
 
-    it('delete wirft NOT_FOUND fuer unbekannte ID', () => {
+    it('delete wirft NOT_FOUND für unbekannte ID', () => {
       const db = makeDb();
       expect(() => deleteAuftrag(db, 'nope')).toThrow(AuftragError);
     });
@@ -212,7 +212,7 @@ describe('auftrag-service', () => {
       const db = makeDb();
       const a = createAuftrag(db, baseInput({ titel: 'Erst' }));
       await new Promise((r) => setTimeout(r, 10));
-      const b = createAuftrag(db, baseInput({ titel: 'Spaeter' }));
+      const b = createAuftrag(db, baseInput({ titel: 'Später' }));
       const list = listAuftraege(db);
       expect(list[0]?.id).toBe(b.id);
       expect(list[1]?.id).toBe(a.id);
@@ -231,7 +231,7 @@ describe('auftrag-service', () => {
       expect(sent.abgeschickt_am).not.toBeNull();
     });
 
-    it('ist idempotent — zweiter Aufruf aendert abgeschickt_am nicht', async () => {
+    it('ist idempotent — zweiter Aufruf ändert abgeschickt_am nicht', async () => {
       const db = makeDb();
       const a = createAuftrag(db, baseInput());
       const first = abschickenAuftrag(db, a.id);
@@ -240,7 +240,7 @@ describe('auftrag-service', () => {
       expect(second.abgeschickt_am).toBe(first.abgeschickt_am);
     });
 
-    it('wirft NOT_FOUND fuer unbekannte ID', () => {
+    it('wirft NOT_FOUND für unbekannte ID', () => {
       const db = makeDb();
       expect(() => abschickenAuftrag(db, 'nope')).toThrow(AuftragError);
     });

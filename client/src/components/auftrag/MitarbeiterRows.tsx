@@ -109,7 +109,7 @@ export function MitarbeiterRows({ rows, onChange, disabled }: MitarbeiterRowsPro
         disabled={disabled}
       >
         <Plus className="h-4 w-4" />
-        Mitarbeiter hinzufuegen
+        Mitarbeiter hinzufügen
       </Button>
     </div>
   );

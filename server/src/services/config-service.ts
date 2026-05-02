@@ -120,7 +120,7 @@ export function getConfig<K extends ConfigKey>(
 
 /**
  * Setzt einen Config-Wert. Validiert das Value gegen das passende Zod-Schema —
- * wirft ZodError bei ungueltigen Daten (vom error-handler in 400 uebersetzt).
+ * wirft ZodError bei ungültigen Daten (vom error-handler in 400 übersetzt).
  */
 export function setConfig<K extends ConfigKey>(
   db: Database.Database,

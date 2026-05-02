@@ -23,7 +23,7 @@ export function SettingsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurueck">
+          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
             <Link to="/">
               <ArrowLeft className="h-5 w-5" />
             </Link>
@@ -37,7 +37,7 @@ export function SettingsPage() {
           <CardHeader>
             <CardTitle>Firma</CardTitle>
             <CardDescription>
-              Stammdaten fuer den PDF-Header und die Fußzeile.
+              Stammdaten für den PDF-Header und die Fußzeile.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -91,7 +91,7 @@ export function SettingsPage() {
           <CardHeader>
             <CardTitle>Erscheinungsbild</CardTitle>
             <CardDescription>
-              Wirkt sofort und wird pro Geraet gespeichert.
+              Wirkt sofort und wird pro Gerät gespeichert.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,9 +101,9 @@ export function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>PIN aendern</CardTitle>
+            <CardTitle>PIN ändern</CardTitle>
             <CardDescription>
-              Drei Schritte: aktueller PIN, neuer PIN, neuer PIN bestaetigen.
+              Drei Schritte: aktueller PIN, neuer PIN, neuer PIN bestätigen.
             </CardDescription>
           </CardHeader>
           <CardContent>

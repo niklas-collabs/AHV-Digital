@@ -60,14 +60,14 @@ export function deleteStufe(db: Database.Database, id: string): void {
   if (!existing) {
     throw new StufeError('NOT_FOUND', 'Stufe nicht gefunden');
   }
-  // Hinweis: Stufen werden in Auftraegen als Snapshot gespeichert (kunde_snapshot-Pattern),
-  // d.h. das Loeschen einer Stufe macht alte Auftraege NICHT kaputt — sie haben den
+  // Hinweis: Stufen werden in Aufträgen als Snapshot gespeichert (kunde_snapshot-Pattern),
+  // d.h. das Löschen einer Stufe macht alte Aufträge NICHT kaputt — sie haben den
   // Stundenpreis bereits eingefroren.
   db.prepare('DELETE FROM stufe WHERE id = ?').run(id);
 }
 
 /**
- * Vertauscht zwei Stufen in der Reihenfolge. Fuer Up/Down-Buttons.
+ * Vertauscht zwei Stufen in der Reihenfolge. Für Up/Down-Buttons.
  */
 export function moveStufe(
   db: Database.Database,

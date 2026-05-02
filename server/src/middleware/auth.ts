@@ -4,9 +4,9 @@ import { verifyToken } from '../services/auth-service.js';
 export const COOKIE_NAME = 'ahv-token';
 
 /**
- * Schuetzt nachgelagerte Routen — pruefe das HTTP-only-Cookie auf gueltiges
- * JWT. Ist das Cookie nicht da oder ungueltig, antworten wir mit 401 und
- * die naechste Middleware wird nicht aufgerufen.
+ * Schuetzt nachgelagerte Routen — pruefe das HTTP-only-Cookie auf gültiges
+ * JWT. Ist das Cookie nicht da oder ungültig, antworten wir mit 401 und
+ * die nächste Middleware wird nicht aufgerufen.
  *
  * Routen, die kein Auth brauchen (/api/health, /api/auth/*), MUESSEN vor
  * dieser Middleware registriert werden.
@@ -20,7 +20,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const result = await verifyToken(token);
   if (!result.valid) {
-    res.status(401).json({ error: 'Token ungueltig', code: 'UNAUTHORIZED' });
+    res.status(401).json({ error: 'Token ungültig', code: 'UNAUTHORIZED' });
     return;
   }
 

@@ -16,7 +16,7 @@ const firmaSchema = z.object({
   plz: z.string(),
   ort: z.string(),
   telefon: z.string(),
-  email: z.string().email('Ungueltige E-Mail').or(z.literal('')),
+  email: z.string().email('Ungültige E-Mail').or(z.literal('')),
   ust_nr: z.string(),
   iban: z.string(),
   bic: z.string(),

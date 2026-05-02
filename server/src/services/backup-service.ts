@@ -11,9 +11,9 @@ export interface BackupResult {
 }
 
 /**
- * Kopiert die SQLite-Datei in <backupDir>/ahv-YYYY-MM-DD.db und loescht
+ * Kopiert die SQLite-Datei in <backupDir>/ahv-YYYY-MM-DD.db und löscht
  * Backups die aelter als RETENTION_DAYS Tage sind. Idempotent — laeuft an
- * jedem Tag erneut, ueberschreibt das aktuelle Datum.
+ * jedem Tag erneut, überschreibt das aktuelle Datum.
  */
 export function runBackup(dbPath: string, backupDir: string): BackupResult {
   if (!existsSync(dbPath)) {
@@ -44,7 +44,7 @@ export function runBackup(dbPath: string, backupDir: string): BackupResult {
 
 /**
  * Plant das tägliche Backup um 03:00 UTC. Liefert die node-cron-Task zurück,
- * damit Tests und Tear-Down sie stoppen koennen.
+ * damit Tests und Tear-Down sie stoppen können.
  */
 export function startBackupCron(dbPath: string, backupDir: string): cron.ScheduledTask {
   const task = cron.schedule(
@@ -56,7 +56,7 @@ export function startBackupCron(dbPath: string, backupDir: string): cron.Schedul
           console.log(`[backup] erstellt: ${path.basename(result.backupFile)}`);
         }
         if (result.deleted.length > 0) {
-          console.log(`[backup] ${result.deleted.length} alte Backup(s) geloescht`);
+          console.log(`[backup] ${result.deleted.length} alte Backup(s) gelöscht`);
         }
       } catch (err) {
         console.error('[backup] fehlgeschlagen:', err);

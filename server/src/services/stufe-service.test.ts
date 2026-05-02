@@ -63,7 +63,7 @@ describe('stufe-service', () => {
     ).toThrow(StufeError);
   });
 
-  it('loescht Stufe', () => {
+  it('löscht Stufe', () => {
     const db = makeDb();
     const created = createStufe(db, { bezeichnung: 'Geselle', stundenpreis: 45 });
     deleteStufe(db, created.id);

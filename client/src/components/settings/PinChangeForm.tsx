@@ -10,7 +10,7 @@ type Step = 'old' | 'new' | 'confirm';
 const STEP_LABELS: Record<Step, string> = {
   old: 'Aktueller PIN',
   new: 'Neuer PIN',
-  confirm: 'Neuer PIN bestaetigen',
+  confirm: 'Neuer PIN bestätigen',
 };
 
 export function PinChangeForm() {
@@ -54,7 +54,7 @@ export function PinChangeForm() {
   useEffect(() => {
     if (step === 'confirm' && confirmPin.length === 4) {
       if (confirmPin !== newPin) {
-        setErrorMsg('PINs stimmen nicht ueberein');
+        setErrorMsg('PINs stimmen nicht überein');
         reset();
         return;
       }
@@ -74,7 +74,7 @@ export function PinChangeForm() {
       {errorMsg && <p className="text-center text-sm text-destructive">{errorMsg}</p>}
       <div className="flex justify-center">
         <Button type="button" variant="ghost" size="sm" onClick={reset} disabled={change.isPending}>
-          Zuruecksetzen
+          Zurücksetzen
         </Button>
       </div>
     </div>

@@ -48,7 +48,7 @@ export function AuftraegePage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurueck">
+          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
             <Link to="/">
               <ArrowLeft className="h-5 w-5" />
             </Link>
@@ -98,7 +98,7 @@ export function AuftraegePage() {
                 key={a.id}
                 auftrag={a}
                 onDelete={() => {
-                  if (confirm(`"${a.titel || '(ohne Titel)'}" wirklich loeschen?`)) {
+                  if (confirm(`"${a.titel || '(ohne Titel)'}" wirklich löschen?`)) {
                     remove.mutate(a.id, {
                       onError: (err) =>
                         toast.error(err instanceof ApiError ? err.message : 'Fehler'),
@@ -160,7 +160,7 @@ function AuftragRow({ auftrag, onDelete }: AuftragRowProps) {
           {auftrag.datum} · {kundeName || 'Kein Kunde'}
         </p>
       </Link>
-      <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Loeschen">
+      <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Löschen">
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>
     </li>

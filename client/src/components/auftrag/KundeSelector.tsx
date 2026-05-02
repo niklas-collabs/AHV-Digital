@@ -42,7 +42,7 @@ export function KundeSelector({ value, onChange, disabled }: KundeSelectorProps)
             variant="ghost"
             onClick={() => onChange(null)}
             disabled={disabled}
-            aria-label="Kunde abwaehlen"
+            aria-label="Kunde abwählen"
           >
             <X className="h-4 w-4" />
           </Button>

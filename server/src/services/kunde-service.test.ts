@@ -55,7 +55,7 @@ describe('kunde-service', () => {
       ).toThrow(ZodError);
     });
 
-    it('lehnt ungueltige E-Mail ab, akzeptiert leeren String', () => {
+    it('lehnt ungültige E-Mail ab, akzeptiert leeren String', () => {
       expect(() =>
         kundeInputSchema.parse({
           typ: 'privat',
@@ -100,7 +100,7 @@ describe('kunde-service', () => {
         vorname: 'Max',
         nachname: 'M',
       });
-      // 10 ms warten damit ISO-Timestamp sich aendert
+      // 10 ms warten damit ISO-Timestamp sich ändert
       await new Promise((r) => setTimeout(r, 10));
       const updated = updateKunde(db, created.id, {
         typ: 'privat',
@@ -119,7 +119,7 @@ describe('kunde-service', () => {
       ).toThrow(KundeError);
     });
 
-    it('verbietet Loeschen wenn Auftrag verknuepft (IN_USE)', () => {
+    it('verbietet Löschen wenn Auftrag verknüpft (IN_USE)', () => {
       const db = makeDb();
       const k = createKunde(db, { typ: 'privat', vorname: 'Max', nachname: 'M' });
       // Direkt einen Auftrag mit kunde_id einfuegen
@@ -138,7 +138,7 @@ describe('kunde-service', () => {
       expect(getKunde(db, k.id)).not.toBeNull();
     });
 
-    it('loescht Kunde ohne verknuepfte Auftraege', () => {
+    it('löscht Kunde ohne verknüpfte Aufträge', () => {
       const db = makeDb();
       const k = createKunde(db, { typ: 'privat', vorname: 'Max', nachname: 'M' });
       deleteKunde(db, k.id);
