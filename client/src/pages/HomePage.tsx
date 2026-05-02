@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, LogOut, Moon, Settings, Sun, Users, Wrench, XCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  ClipboardList,
+  LogOut,
+  Moon,
+  Settings,
+  Sun,
+  Users,
+  Wrench,
+  XCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { HealthResponse } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -74,10 +84,10 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.6 — Kunden</CardTitle>
+            <CardTitle>Phase 1.7 — Aufträge</CardTitle>
             <CardDescription>
-              Kunden-Verwaltung mit Suche, Privat/Firma-Toggle und FK-Schutz beim Loeschen.
-              Aufträge folgen ab 1.7.
+              Arbeitszettel, Angebote, Lieferscheine mit Mitarbeiter-/Material-Zeilen,
+              Pauschalen-Chips und Abschicken. PDF-Export folgt in 1.8.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -86,12 +96,20 @@ export function HomePage() {
               data={healthQuery.data}
               error={healthQuery.error}
             />
-            <Button asChild>
-              <Link to="/kunden">
-                <Users className="h-4 w-4" />
-                Kunden verwalten
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <Link to="/auftraege">
+                  <ClipboardList className="h-4 w-4" />
+                  Aufträge
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/kunden">
+                  <Users className="h-4 w-4" />
+                  Kunden
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

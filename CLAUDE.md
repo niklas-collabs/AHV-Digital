@@ -110,11 +110,13 @@ ahv-arbeitszettel/
 ## Workflow für neue Features
 
 1. **Spec lesen.** Welche Phase? Welcher Abschnitt in `SPEC.md`?
-2. **Klärung vorab.** Wenn etwas in der Spec unklar oder widersprüchlich ist: fragen, bevor Code geschrieben wird.
-3. **Plan vorlegen** bei Änderungen >50 Zeilen oder >2 Dateien. Ich gebe Go.
-4. **Datenmodell zuerst.** Typ + Migration + Service-Skelett — dann erst UI.
-5. **Eine Phase nach der anderen.** Phase 2 wird nicht angefangen bevor Phase 1 lauffähig und von mir abgenommen ist.
-6. **Bei Unsicherheit: fragen.** Lieber eine Rückfrage als ein Refactoring.
+2. **Plan-Übersicht** bei großen Phasen — 3–5 Zeilen was geplant ist, kein Detail-Fragen-Block. Bei kleineren Änderungen direkt loslegen.
+3. **Pragmatische Entscheidungen** für Datei-Naming, Sortierreihenfolge, Default-Werte, kleine UX-Details — keine Rückfrage nötig.
+4. **Rückfrage nur bei echten Spec-Lücken** (Soft- vs. Hard-Delete, Auth ja/nein für einen Endpoint, abweichende Architektur-Entscheidungen). Lieber eine knappe Klärung als später ein Refactoring.
+5. **Datenmodell zuerst.** Typ + Migration + Service-Skelett — dann erst UI.
+6. **Eine Phase nach der anderen.** Phase 2 wird nicht angefangen, bevor Phase 1 lauffähig und abgenommen ist.
+7. **Tech-Stack bleibt dicht.** Keine neuen Frameworks/Libs ohne kurze Frage.
+8. **Niklas kann jederzeit stoppen** und Änderungen am gerade geschriebenen Code verlangen — wird im nächsten Commit gefixt.
 
 ## Tests
 

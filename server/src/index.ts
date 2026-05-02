@@ -8,6 +8,7 @@ import type { HealthResponse } from '@ahv/shared';
 import { getDb, resolveDbPath } from './db/client.js';
 import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
+import { auftragRouter } from './routes/auftrag.js';
 import { authRouter } from './routes/auth.js';
 import { configRouter } from './routes/config.js';
 import { kundeRouter } from './routes/kunde.js';
@@ -75,7 +76,8 @@ app.use('/api/logo', logoRouter);
 app.use('/api/stufen', stufeRouter);
 app.use('/api/pauschalen', pauschaleRouter);
 app.use('/api/kunden', kundeRouter);
-// (Hier folgt ab 1.7 die geschuetzte Route fuer Auftraege)
+app.use('/api/auftraege', auftragRouter);
+// (1.8 ergaenzt /api/auftraege/:id/pdf)
 
 // === Static-Serve (Production) ===
 if (!isDev) {
