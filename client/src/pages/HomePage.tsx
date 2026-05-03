@@ -84,10 +84,11 @@ export function HomePage() {
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Phase 1.8 — PDF-Export</CardTitle>
+            <CardTitle>Phase 1.9 — PWA</CardTitle>
             <CardDescription>
-              Arbeitszettel mit Unterschriftsfeld, Angebot mit Preis-Summen, Lieferschein
-              ohne Preise. PDF-Symbol an jedem Auftrag öffnet die Druckansicht.
+              App lässt sich auf Handy installieren („Zum Startbildschirm" / „App
+              installieren"). Service-Worker cached Assets und macht die App offline-fähig
+              für bereits geladene Daten.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
