@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Building2, Pencil, Plus, Search, Trash2, User } from 'lucide-react';
+import { Building2, Pencil, Plus, Search, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Kunde } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -27,14 +26,9 @@ export function KundenPage() {
   const kunden = data ?? [];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <>
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
-            <Link to="/">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
           <h1 className="flex-1 text-lg font-semibold">Kunden</h1>
           <Button onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" />
@@ -56,7 +50,7 @@ export function KundenPage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lade …</p>
+          <p className="text-sm text-muted-foreground">Lädt …</p>
         ) : kunden.length === 0 ? (
           <EmptyState hasSearch={debouncedSearch.length > 0} />
         ) : (
@@ -90,7 +84,7 @@ export function KundenPage() {
 
       {creating && <KundeFormDialog kunde={null} onClose={() => setCreating(false)} />}
       {editing && <KundeFormDialog kunde={editing} onClose={() => setEditing(null)} />}
-    </div>
+    </>
   );
 }
 

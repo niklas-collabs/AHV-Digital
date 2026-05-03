@@ -1,5 +1,7 @@
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Card,
   CardContent,
@@ -8,6 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ApiError, apiClient } from '@/lib/api';
+import { AUTH_STATUS_QUERY_KEY } from '@/hooks/useAuthStatus';
 import { useConfig } from '@/hooks/useConfig';
 import { FirmaForm } from '@/components/settings/FirmaForm';
 import { ThemeSection } from '@/components/settings/ThemeSection';
@@ -18,21 +22,29 @@ import { PauschalenSection } from '@/components/settings/PauschalenSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const logoutMutation = useMutation({
+    mutationFn: () => apiClient('/api/auth/logout', { method: 'POST' }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: AUTH_STATUS_QUERY_KEY });
+      navigate('/login', { replace: true });
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof ApiError ? err.message : 'Abmelden fehlgeschlagen');
+    },
+  });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <>
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
-            <Link to="/">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
           <h1 className="text-lg font-semibold">Einstellungen</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-12">
+      <main className="mx-auto max-w-3xl space-y-4 p-4">
         <Card>
           <CardHeader>
             <CardTitle>Firma</CardTitle>
@@ -42,7 +54,7 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Lade …</p>
+              <p className="text-sm text-muted-foreground">Lädt …</p>
             ) : (
               <FirmaForm initial={config?.firma ?? null} />
             )}
@@ -56,7 +68,7 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Lade …</p>
+              <p className="text-sm text-muted-foreground">Lädt …</p>
             ) : (
               <LogoUploadSection current={config?.logo ?? null} />
             )}
@@ -110,7 +122,26 @@ export function SettingsPage() {
             <PinChangeForm />
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Abmelden</CardTitle>
+            <CardDescription>
+              Beendet die Session auf diesem Gerät. Beim nächsten Aufruf ist der PIN nötig.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              <LogOut className="h-4 w-4" />
+              {logoutMutation.isPending ? 'Wird abgemeldet …' : 'Abmelden'}
+            </Button>
+          </CardContent>
+        </Card>
       </main>
-    </div>
+    </>
   );
 }

@@ -3,11 +3,11 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { Loader2 } from 'lucide-react';
 import { LoginPage } from '@/pages/LoginPage';
 import { SetupPage } from '@/pages/SetupPage';
-import { HomePage } from '@/pages/HomePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { KundenPage } from '@/pages/KundenPage';
 import { AuftraegePage } from '@/pages/AuftraegePage';
 import { AuftragFormPage } from '@/pages/AuftragFormPage';
+import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { Toaster } from '@/components/ui/sonner';
 import { applyThemeToDocument, useThemeStore } from '@/stores/theme-store';
@@ -24,14 +24,21 @@ export function App() {
       <Routes>
         <Route path="/setup" element={<PublicGate kind="setup" />} />
         <Route path="/login" element={<PublicGate kind="login" />} />
+
         <Route element={<ProtectedGate />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/kunden" element={<KundenPage />} />
-          <Route path="/auftraege" element={<AuftraegePage />} />
+          {/* Top-Level-Seiten mit Bottom-Nav */}
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="/" element={<Navigate to="/auftraege" replace />} />
+            <Route path="/auftraege" element={<AuftraegePage />} />
+            <Route path="/kunden" element={<KundenPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Sub-Seiten ohne Bottom-Nav (Vollbild + eigene Action-Bar) */}
           <Route path="/auftraege/neu" element={<AuftragFormPage />} />
           <Route path="/auftraege/:id/edit" element={<AuftragFormPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster />

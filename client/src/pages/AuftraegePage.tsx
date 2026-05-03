@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   ClipboardList,
   FileDown,
   FileText,
@@ -46,14 +45,9 @@ export function AuftraegePage() {
   const auftraege = data ?? [];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <>
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <Button asChild variant="ghost" size="icon" aria-label="Zurück">
-            <Link to="/">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
           <h1 className="flex-1 text-lg font-semibold">Aufträge</h1>
           <Button asChild>
             <Link to="/auftraege/neu">
@@ -85,7 +79,7 @@ export function AuftraegePage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lade …</p>
+          <p className="text-sm text-muted-foreground">Lädt …</p>
         ) : auftraege.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-12 text-center">
             <p className="text-sm text-muted-foreground">
@@ -111,7 +105,7 @@ export function AuftraegePage() {
           </ul>
         )}
       </main>
-    </div>
+    </>
   );
 }
 
