@@ -147,14 +147,14 @@ describe('config-service', () => {
   describe('upsert / delete', () => {
     it('überschreibt vorhandenen Wert', () => {
       const db = makeDb();
-      setConfig(db, 'lexoffice_api_key', 'key-1');
-      setConfig(db, 'lexoffice_api_key', 'key-2');
-      expect(getConfig(db, 'lexoffice_api_key')).toBe('key-2');
+      setConfig(db, 'lexoffice_api_key', 'lxof_key_at_least_20_chars_long_1');
+      setConfig(db, 'lexoffice_api_key', 'lxof_key_at_least_20_chars_long_2');
+      expect(getConfig(db, 'lexoffice_api_key')).toBe('lxof_key_at_least_20_chars_long_2');
     });
 
     it('deleteConfig entfernt den Eintrag', () => {
       const db = makeDb();
-      setConfig(db, 'lexoffice_api_key', 'key-1');
+      setConfig(db, 'lexoffice_api_key', 'lxof_key_at_least_20_chars_long_1');
       deleteConfig(db, 'lexoffice_api_key');
       expect(getConfig(db, 'lexoffice_api_key')).toBeNull();
     });

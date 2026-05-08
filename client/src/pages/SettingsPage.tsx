@@ -19,6 +19,7 @@ import { LogoUploadSection } from '@/components/settings/LogoUploadSection';
 import { PinChangeForm } from '@/components/settings/PinChangeForm';
 import { StufenSection } from '@/components/settings/StufenSection';
 import { PauschalenSection } from '@/components/settings/PauschalenSection';
+import { LexofficeSection } from '@/components/settings/LexofficeSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -96,6 +97,19 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <PauschalenSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Lexoffice-Sync</CardTitle>
+            <CardDescription>
+              Kunden aus Lexoffice in die App ziehen. API-Key wird ausschließlich
+              server-seitig gespeichert.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LexofficeSection />
           </CardContent>
         </Card>
 

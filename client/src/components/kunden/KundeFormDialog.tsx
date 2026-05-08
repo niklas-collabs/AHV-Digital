@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, type FieldError, type UseFormRegisterReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/api';
 import { type KundeInput, useCreateKunde, useUpdateKunde } from '@/hooks/useKunden';
+import { useLexofficeStatus } from '@/hooks/useLexoffice';
 import { cn } from '@/lib/utils';
 
 // Discriminated-Union analog Backend.
@@ -98,6 +99,17 @@ function fromKunde(k: Kunde): KundeFormValues {
 export function KundeFormDialog({ kunde, onClose }: KundeFormDialogProps) {
   const create = useCreateKunde();
   const update = useUpdateKunde();
+  const { data: lexofficeStatus } = useLexofficeStatus();
+
+  // Sync nur möglich beim Anlegen (nicht beim Bearbeiten) und nur wenn
+  // Lexoffice-API-Key gesetzt ist und Kunde noch keine lexoffice_id hat.
+  const canSync = !kunde && (lexofficeStatus?.apiKeySet ?? false);
+  const [syncToLexoffice, setSyncToLexoffice] = useState(false);
+
+  // Default-Wert: aktiviert sobald API-Key da ist
+  useEffect(() => {
+    if (canSync) setSyncToLexoffice(true);
+  }, [canSync]);
 
   const form = useForm<KundeFormValues>({
     resolver: zodResolver(kundeFormSchema),
@@ -116,17 +128,39 @@ export function KundeFormDialog({ kunde, onClose }: KundeFormDialogProps) {
 
   const onSubmit = form.handleSubmit((values) => {
     const payload = values as KundeInput;
-    const onSuccess = () => {
-      toast.success(kunde ? 'Kunde aktualisiert' : 'Kunde angelegt');
-      onClose();
-    };
     const onError = (err: unknown) =>
       toast.error(err instanceof ApiError ? err.message : 'Fehler');
 
     if (kunde) {
-      update.mutate({ id: kunde.id, input: payload }, { onSuccess, onError });
+      update.mutate(
+        { id: kunde.id, input: payload },
+        {
+          onSuccess: () => {
+            toast.success('Kunde aktualisiert');
+            onClose();
+          },
+          onError,
+        },
+      );
     } else {
-      create.mutate(payload, { onSuccess, onError });
+      create.mutate(
+        { input: payload, syncToLexoffice: syncToLexoffice && canSync },
+        {
+          onSuccess: (created) => {
+            if (created._lexofficeWarning) {
+              toast.warning('Kunde lokal angelegt, Lexoffice-Sync fehlgeschlagen', {
+                description: created._lexofficeWarning,
+              });
+            } else if (syncToLexoffice && canSync) {
+              toast.success('Kunde angelegt und in Lexoffice synchronisiert');
+            } else {
+              toast.success('Kunde angelegt');
+            }
+            onClose();
+          },
+          onError,
+        },
+      );
     }
   });
 
@@ -212,6 +246,18 @@ export function KundeFormDialog({ kunde, onClose }: KundeFormDialogProps) {
             <Label htmlFor="notiz">Notiz (intern)</Label>
             <Textarea id="notiz" rows={2} {...form.register('notiz')} />
           </div>
+
+          {canSync && (
+            <label className="flex items-center gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={syncToLexoffice}
+                onChange={(e) => setSyncToLexoffice(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <span>Auch in Lexoffice anlegen</span>
+            </label>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>

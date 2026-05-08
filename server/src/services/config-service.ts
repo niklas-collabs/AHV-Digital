@@ -44,12 +44,14 @@ const vapidSchema: z.ZodType<VapidKeys> = z.object({
   privateKey: z.string(),
 });
 
-const lexofficeApiKeySchema = z.string();
+const lexofficeApiKeySchema = z.string().min(20, 'API-Key zu kurz');
+const lexofficeLastSyncSchema = z.string();
 
 const SCHEMAS: { [K in ConfigKey]: ZodSchema<ConfigValueByKey[K]> } = {
   firma: firmaSchema,
   gmail: gmailSchema,
   lexoffice_api_key: lexofficeApiKeySchema,
+  lexoffice_last_sync: lexofficeLastSyncSchema,
   logo: logoSchema,
   theme_default: themeSchema,
   language_default: languageSchema,
@@ -60,6 +62,7 @@ const ALL_KEYS: ConfigKey[] = [
   'firma',
   'gmail',
   'lexoffice_api_key',
+  'lexoffice_last_sync',
   'logo',
   'theme_default',
   'language_default',

@@ -9,9 +9,18 @@ import {
   listKunden,
   updateKunde,
 } from '../services/kunde-service.js';
+import { createKundeInLexoffice } from '../services/lexoffice-service.js';
+import { logger } from '../lib/logger.js';
 
 const listQuery = z.object({
   q: z.string().optional(),
+});
+
+const createQuery = z.object({
+  syncToLexoffice: z
+    .union([z.literal('true'), z.literal('false'), z.boolean()])
+    .optional()
+    .transform((v) => v === true || v === 'true'),
 });
 
 export const kundeRouter = Router();
@@ -38,10 +47,42 @@ kundeRouter.get('/:id', (req, res, next) => {
   }
 });
 
-kundeRouter.post('/', (req, res, next) => {
+kundeRouter.post('/', async (req, res, next) => {
   try {
     const input = kundeInputSchema.parse(req.body);
-    res.status(201).json(createKunde(getDb(), input));
+    const { syncToLexoffice } = createQuery.parse(req.query);
+    const db = getDb();
+
+    const created = createKunde(db, input);
+
+    if (syncToLexoffice) {
+      try {
+        const lexofficeId = await createKundeInLexoffice(db, input);
+        db.prepare('UPDATE kunde SET lexoffice_id = ? WHERE id = ?').run(
+          lexofficeId,
+          created.id,
+        );
+        const refreshed = getKunde(db, created.id);
+        if (refreshed) {
+          res.status(201).json(refreshed);
+          return;
+        }
+      } catch (err) {
+        // Lokal-Anlegen war erfolgreich, Lexoffice scheiterte — Kunde
+        // bleibt lokal, Frontend bekommt Warning-Feld.
+        logger.warn('lexoffice.create_failed', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+        res.status(201).json({
+          ...created,
+          _lexofficeWarning:
+            err instanceof Error ? err.message : 'Sync nach Lexoffice fehlgeschlagen',
+        });
+        return;
+      }
+    }
+
+    res.status(201).json(created);
   } catch (err) {
     next(err);
   }

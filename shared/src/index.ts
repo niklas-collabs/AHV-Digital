@@ -194,6 +194,7 @@ export type ConfigKey =
   | 'firma'
   | 'gmail'
   | 'lexoffice_api_key'
+  | 'lexoffice_last_sync'
   | 'logo'
   | 'theme_default'
   | 'language_default'
@@ -204,10 +205,33 @@ export interface ConfigValueByKey {
   firma: FirmaConfig;
   gmail: GmailConfig;
   lexoffice_api_key: string;
+  lexoffice_last_sync: string; // ISO datetime
   logo: LogoConfig;
   theme_default: ThemeMode;
   language_default: Language;
   vapid_keys: VapidKeys;
+}
+
+// === Lexoffice (Phase 2.1) ===
+
+export interface LexofficeStatusResponse {
+  apiKeySet: boolean;
+  lastSync: string | null;
+}
+
+export interface LexofficeTestResponse {
+  ok: true;
+  /** Anzahl der Kontakte in Lexoffice (zur Orientierung) */
+  contactsTotal: number;
+}
+
+export interface LexofficeSyncResult {
+  added: number;
+  updated: number;
+  skipped: number;
+  total: number;
+  /** Bei Fehlern in einzelnen Records — Sync läuft soweit wie möglich weiter */
+  errors: { lexofficeId: string; reason: string }[];
 }
 
 // === Auth & System ===

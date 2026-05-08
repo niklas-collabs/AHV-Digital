@@ -31,8 +31,21 @@ export function useKunden(query?: string) {
 export function useCreateKunde() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: KundeInput) =>
-      apiClient<Kunde>('/api/kunden', { method: 'POST', body: input }),
+    mutationFn: ({
+      input,
+      syncToLexoffice,
+    }: {
+      input: KundeInput;
+      syncToLexoffice?: boolean;
+    }) => {
+      const url = syncToLexoffice
+        ? '/api/kunden?syncToLexoffice=true'
+        : '/api/kunden';
+      return apiClient<Kunde & { _lexofficeWarning?: string }>(url, {
+        method: 'POST',
+        body: input,
+      });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: [KUNDEN_QUERY_KEY] }),
   });
 }
