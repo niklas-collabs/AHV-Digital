@@ -33,6 +33,7 @@ import { KundeSelector } from '@/components/auftrag/KundeSelector';
 import { MitarbeiterRows } from '@/components/auftrag/MitarbeiterRows';
 import { MaterialRows } from '@/components/auftrag/MaterialRows';
 import { PauschalenChips } from '@/components/auftrag/PauschalenChips';
+import { SignaturePad } from '@/components/auftrag/SignaturePad';
 
 interface FormState {
   typ: AuftragTyp;
@@ -44,6 +45,7 @@ interface FormState {
   objekt_adresse: string;
   mitarbeiter: AuftragMitarbeiter[];
   materialien: AuftragMaterial[];
+  signature_data_url: string | null;
 }
 
 const todayIso = (): string => new Date().toISOString().slice(0, 10);
@@ -58,6 +60,7 @@ const EMPTY_STATE: FormState = {
   objekt_adresse: '',
   mitarbeiter: [],
   materialien: [],
+  signature_data_url: null,
 };
 
 function fromAuftrag(a: Auftrag): FormState {
@@ -71,6 +74,7 @@ function fromAuftrag(a: Auftrag): FormState {
     objekt_adresse: a.objekt_adresse ?? '',
     mitarbeiter: a.mitarbeiter,
     materialien: a.materialien,
+    signature_data_url: a.signature_data_url,
   };
 }
 
@@ -86,6 +90,8 @@ function toInput(state: FormState): AuftragInput {
     mitarbeiter: state.mitarbeiter,
     materialien: state.materialien,
     fotos: [],
+    // Unterschrift nur bei Arbeitszettel mitsenden — sonst leeren
+    signature_data_url: state.typ === 'arbeitszettel' ? state.signature_data_url : null,
   };
 }
 
@@ -300,6 +306,26 @@ export function AuftragFormPage() {
             />
           </CardContent>
         </Card>
+
+        {state.typ === 'arbeitszettel' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Unterschrift Kunde</CardTitle>
+              <CardDescription className="text-xs">
+                Mit Finger unterschreiben — erscheint im PDF unter „Unterschrift Kunde".
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SignaturePad
+                value={state.signature_data_url}
+                onChange={(signature_data_url) =>
+                  setState((s) => ({ ...s, signature_data_url }))
+                }
+                disabled={disabled}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-3">
