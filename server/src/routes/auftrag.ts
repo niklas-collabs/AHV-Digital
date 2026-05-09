@@ -14,6 +14,7 @@ import {
 } from '../services/auftrag-service.js';
 import { getConfig } from '../services/config-service.js';
 import { readLogo } from '../services/logo-service.js';
+import { sendAuftragMail } from '../services/mail-service.js';
 import {
   deleteFotoFile,
   fotoUploadMiddleware,
@@ -28,10 +29,9 @@ const listQuery = z.object({
   q: z.string().optional(),
 });
 
-// /abschicken Body: SPEC sieht { sendKunde, sendFotos } vor — die werden
-// in 2.2 (Gmail-Versand) zur E-Mail-Generation genutzt. In 1.7 nur ignoriert,
-// aber das Schema akzeptiert sie damit der Client schon den Endpunkt korrekt
-// aufrufen kann.
+// /abschicken Body: { sendKunde, sendFotos }. Wenn beide false (oder Body
+// leer), wird der Auftrag nur als abgeschickt markiert ohne Mail. Mit
+// sendKunde=true geht eine Mail an Firma + Kunde.
 const abschickenBody = z
   .object({
     sendKunde: z.boolean().optional(),
@@ -81,10 +81,30 @@ auftragRouter.put('/:id', (req, res, next) => {
   }
 });
 
-auftragRouter.post('/:id/abschicken', (req, res, next) => {
+auftragRouter.post('/:id/abschicken', async (req, res, next) => {
   try {
-    abschickenBody.parse(req.body);
-    res.json(abschickenAuftrag(getDb(), req.params.id));
+    const body = abschickenBody.parse(req.body) ?? {};
+    const id = req.params.id as string;
+    const db = getDb();
+    const auftrag = getAuftrag(db, id);
+    if (!auftrag) {
+      res.status(404).json({ error: 'Auftrag nicht gefunden', code: 'NOT_FOUND' });
+      return;
+    }
+
+    // Mail-Versand erst, dann Status-Update — wenn Mail fehlschlägt, bleibt
+    // der Auftrag Entwurf und der User sieht den Fehler.
+    let mailResult: { recipients: string[]; fotosAttached: number } | null = null;
+    if (body.sendKunde) {
+      const result = await sendAuftragMail(db, auftrag, {
+        sendKunde: true,
+        sendFotos: body.sendFotos ?? false,
+      });
+      mailResult = { recipients: result.recipients, fotosAttached: result.fotosAttached };
+    }
+
+    const updated = abschickenAuftrag(db, id);
+    res.json({ ...updated, ...(mailResult ? { _mailResult: mailResult } : {}) });
   } catch (err) {
     next(err);
   }

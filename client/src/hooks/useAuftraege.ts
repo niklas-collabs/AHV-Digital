@@ -85,15 +85,23 @@ export function useDeleteAuftrag() {
   });
 }
 
+export interface AbschickenOptions {
+  sendKunde?: boolean;
+  sendFotos?: boolean;
+}
+
 export function useAbschickenAuftrag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiClient<Auftrag>(`/api/auftraege/${encodeURIComponent(id)}/abschicken`, {
-        method: 'POST',
-        body: {},
-      }),
-    onSuccess: (_data, id) => {
+    mutationFn: ({ id, options }: { id: string; options?: AbschickenOptions }) =>
+      apiClient<Auftrag & { _mailResult?: { recipients: string[]; fotosAttached: number } }>(
+        `/api/auftraege/${encodeURIComponent(id)}/abschicken`,
+        {
+          method: 'POST',
+          body: options ?? {},
+        },
+      ),
+    onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY, id] });
     },

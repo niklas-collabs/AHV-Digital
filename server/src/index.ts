@@ -14,6 +14,7 @@ import { configRouter } from './routes/config.js';
 import { kundeRouter } from './routes/kunde.js';
 import { lexofficeRouter } from './routes/lexoffice.js';
 import { logoRouter } from './routes/logo.js';
+import { mailRouter } from './routes/mail.js';
 import { pauschaleRouter } from './routes/pauschale.js';
 import { stufeRouter } from './routes/stufe.js';
 import { requireAuth } from './middleware/auth.js';
@@ -79,6 +80,7 @@ app.use('/api/pauschalen', pauschaleRouter);
 app.use('/api/kunden', kundeRouter);
 app.use('/api/auftraege', auftragRouter);
 app.use('/api/lexoffice', lexofficeRouter);
+app.use('/api/mail', mailRouter);
 // (1.8 ergaenzt /api/auftraege/:id/pdf)
 
 // === Static-Serve (Production) ===

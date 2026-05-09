@@ -7,6 +7,7 @@ import { AuftragError } from '../services/auftrag-service.js';
 import { FotoError } from '../services/foto-service.js';
 import { KundeError } from '../services/kunde-service.js';
 import { LexofficeServiceError } from '../services/lexoffice-service.js';
+import { MailServiceError } from '../services/mail-service.js';
 import { PauschaleError } from '../services/pauschale-service.js';
 import { StufeError } from '../services/stufe-service.js';
 import { logger } from '../lib/logger.js';
@@ -82,6 +83,19 @@ export function errorHandler(
   if (err instanceof LexofficeServiceError) {
     const status = err.code === 'NO_API_KEY' ? 412 : 502;
     res.status(status).json({ error: err.message, code: err.code, ...err.meta });
+    return;
+  }
+
+  if (err instanceof MailServiceError) {
+    let status: number;
+    if (err.code === 'NO_GMAIL_CONFIG' || err.code === 'NO_FIRMA_EMAIL' || err.code === 'NO_RECIPIENT') {
+      status = 412;
+    } else if (err.code === 'AUTH_FAILED') {
+      status = 401;
+    } else {
+      status = 502;
+    }
+    res.status(status).json({ error: err.message, code: err.code });
     return;
   }
 

@@ -35,6 +35,10 @@ import { MaterialRows } from '@/components/auftrag/MaterialRows';
 import { PauschalenChips } from '@/components/auftrag/PauschalenChips';
 import { SignaturePad } from '@/components/auftrag/SignaturePad';
 import { FotoGrid } from '@/components/auftrag/FotoGrid';
+import {
+  AbschickenDialog,
+  type AbschickenOptions,
+} from '@/components/auftrag/AbschickenDialog';
 
 interface FormState {
   typ: AuftragTyp;
@@ -145,27 +149,53 @@ export function AuftragFormPage() {
     return null;
   };
 
-  const handleSave = async (afterAbschicken: boolean) => {
+  const [showAbschickenDialog, setShowAbschickenDialog] = useState(false);
+
+  const handleSave = async () => {
     const err = validate();
     if (err) {
       toast.error(err);
       return;
     }
     try {
+      if (isEdit && existing) {
+        await update.mutateAsync({ id: existing.id, input: toUpdateInput(state) });
+      } else {
+        await create.mutateAsync(toInput(state));
+      }
+      toast.success(isEdit ? 'Gespeichert' : 'Auftrag angelegt');
+      navigate('/auftraege', { replace: true });
+    } catch (e: unknown) {
+      toast.error(e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen');
+    }
+  };
+
+  const handleAbschicken = async (options: AbschickenOptions) => {
+    const err = validate();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    try {
+      // Erst speichern (mit aktuellen Form-Werten), dann abschicken
       let saved: Auftrag;
       if (isEdit && existing) {
         saved = await update.mutateAsync({ id: existing.id, input: toUpdateInput(state) });
       } else {
         saved = await create.mutateAsync(toInput(state));
       }
-      toast.success(isEdit ? 'Gespeichert' : 'Auftrag angelegt');
-      if (afterAbschicken) {
-        await abschicken.mutateAsync(saved.id);
+      const result = await abschicken.mutateAsync({ id: saved.id, options });
+      if (options.sendKunde && result._mailResult) {
+        toast.success(
+          `Abgeschickt — Mail an ${result._mailResult.recipients.length} Empfänger`,
+        );
+      } else {
         toast.success('Abgeschickt');
       }
+      setShowAbschickenDialog(false);
       navigate('/auftraege', { replace: true });
     } catch (e: unknown) {
-      toast.error(e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen');
+      toast.error(e instanceof ApiError ? e.message : 'Abschicken fehlgeschlagen');
     }
   };
 
@@ -377,6 +407,15 @@ export function AuftragFormPage() {
         </div>
       </main>
 
+      <AbschickenDialog
+        open={showAbschickenDialog}
+        onClose={() => setShowAbschickenDialog(false)}
+        onConfirm={handleAbschicken}
+        kundeEmail={existing?.kunde_snapshot.email?.trim() || null}
+        fotoCount={existing?.fotos.length ?? 0}
+        isPending={create.isPending || update.isPending || abschicken.isPending}
+      />
+
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 p-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           {isEdit && !isAbgeschickt && (
@@ -408,7 +447,7 @@ export function AuftragFormPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => handleSave(false)}
+            onClick={handleSave}
             disabled={disabled}
             className="flex-1"
           >
@@ -417,7 +456,7 @@ export function AuftragFormPage() {
           {!isAbgeschickt && (
             <Button
               type="button"
-              onClick={() => handleSave(true)}
+              onClick={() => setShowAbschickenDialog(true)}
               disabled={disabled}
               className="flex-1"
             >

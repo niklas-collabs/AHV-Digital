@@ -20,6 +20,7 @@ import { PinChangeForm } from '@/components/settings/PinChangeForm';
 import { StufenSection } from '@/components/settings/StufenSection';
 import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
+import { GmailSection } from '@/components/settings/GmailSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -97,6 +98,19 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <PauschalenSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Gmail-Versand</CardTitle>
+            <CardDescription>
+              PDF + optional Fotos an die Firma- und Kunden-Adresse beim Abschicken
+              eines Auftrags. App-Passwort ist Pflicht — kein normales Gmail-Passwort.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GmailSection />
           </CardContent>
         </Card>
 
