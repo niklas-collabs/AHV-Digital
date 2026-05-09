@@ -34,6 +34,7 @@ import { MitarbeiterRows } from '@/components/auftrag/MitarbeiterRows';
 import { MaterialRows } from '@/components/auftrag/MaterialRows';
 import { PauschalenChips } from '@/components/auftrag/PauschalenChips';
 import { SignaturePad } from '@/components/auftrag/SignaturePad';
+import { FotoGrid } from '@/components/auftrag/FotoGrid';
 
 interface FormState {
   typ: AuftragTyp;
@@ -95,6 +96,15 @@ function toInput(state: FormState): AuftragInput {
   };
 }
 
+/** Hilfsfunktion: liefert Save-Payload OHNE fotos-Feld, damit der
+ *  PUT-Endpoint die Server-seitigen Fotos nicht überschreibt. */
+function toUpdateInput(state: FormState): AuftragInput {
+  const input = toInput(state);
+  // Fotos werden über separate Endpoints verwaltet (siehe FotoGrid)
+  delete (input as Partial<AuftragInput>).fotos;
+  return input;
+}
+
 export function AuftragFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -141,13 +151,12 @@ export function AuftragFormPage() {
       toast.error(err);
       return;
     }
-    const input = toInput(state);
     try {
       let saved: Auftrag;
       if (isEdit && existing) {
-        saved = await update.mutateAsync({ id: existing.id, input });
+        saved = await update.mutateAsync({ id: existing.id, input: toUpdateInput(state) });
       } else {
-        saved = await create.mutateAsync(input);
+        saved = await create.mutateAsync(toInput(state));
       }
       toast.success(isEdit ? 'Gespeichert' : 'Auftrag angelegt');
       if (afterAbschicken) {
@@ -306,6 +315,25 @@ export function AuftragFormPage() {
             />
           </CardContent>
         </Card>
+
+        {isEdit && existing && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Fotos</CardTitle>
+              <CardDescription className="text-xs">
+                Mit der Kamera aufnehmen oder aus der Galerie wählen. Bilder werden
+                serverseitig auf max. 1600 px komprimiert (JPEG). Maximal 10 Fotos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FotoGrid
+                auftragId={existing.id}
+                fotos={existing.fotos}
+                disabled={isAbgeschickt}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {state.typ === 'arbeitszettel' && (
           <Card>

@@ -3,15 +3,23 @@ import { z } from 'zod';
 import { getDb, resolveUploadsDir } from '../db/client.js';
 import {
   abschickenAuftrag,
+  addFotoToAuftrag,
   auftragInputSchema,
   createAuftrag,
   deleteAuftrag,
   getAuftrag,
   listAuftraege,
+  removeFotoFromAuftrag,
   updateAuftrag,
 } from '../services/auftrag-service.js';
 import { getConfig } from '../services/config-service.js';
 import { readLogo } from '../services/logo-service.js';
+import {
+  deleteFotoFile,
+  fotoUploadMiddleware,
+  readFoto,
+  saveFoto,
+} from '../services/foto-service.js';
 import { generateAuftragPdf } from '../lib/pdf-generator.js';
 
 const listQuery = z.object({
@@ -111,6 +119,65 @@ auftragRouter.delete('/:id', (req, res, next) => {
   try {
     deleteAuftrag(getDb(), req.params.id);
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// === Fotos (Phase 2.3) ===
+
+auftragRouter.post('/:id/fotos', fotoUploadMiddleware, async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'Keine Datei hochgeladen', code: 'NO_FILE' });
+      return;
+    }
+    const id = req.params.id as string;
+    const db = getDb();
+    // Auftrag muss existieren — saveFoto würde sonst Foto verwaisen
+    const auftrag = getAuftrag(db, id);
+    if (!auftrag) {
+      res.status(404).json({ error: 'Auftrag nicht gefunden', code: 'NOT_FOUND' });
+      return;
+    }
+    const filename = await saveFoto(resolveUploadsDir(), id, req.file.buffer);
+    try {
+      const updated = addFotoToAuftrag(db, id, filename);
+      res.status(201).json(updated);
+    } catch (err) {
+      // Falls add fehlschlägt (z.B. TOO_MANY_FOTOS): Datei wieder entfernen
+      deleteFotoFile(resolveUploadsDir(), id, filename);
+      throw err;
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+auftragRouter.get('/:id/fotos/:filename', (req, res, next) => {
+  try {
+    const { id, filename } = req.params as { id: string; filename: string };
+    const buffer = readFoto(resolveUploadsDir(), id, filename);
+    if (!buffer) {
+      res.status(404).json({ error: 'Foto nicht gefunden', code: 'NOT_FOUND' });
+      return;
+    }
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+auftragRouter.delete('/:id/fotos/:filename', (req, res, next) => {
+  try {
+    const { id, filename } = req.params as { id: string; filename: string };
+    const result = removeFotoFromAuftrag(getDb(), id, filename);
+    if (result.wasInList) {
+      deleteFotoFile(resolveUploadsDir(), id, filename);
+    }
+    res.json(result.auftrag);
   } catch (err) {
     next(err);
   }

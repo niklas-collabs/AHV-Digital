@@ -4,6 +4,7 @@ import { MulterError } from 'multer';
 import { AuthError } from '../services/auth-service.js';
 import { LogoError } from '../services/logo-service.js';
 import { AuftragError } from '../services/auftrag-service.js';
+import { FotoError } from '../services/foto-service.js';
 import { KundeError } from '../services/kunde-service.js';
 import { LexofficeServiceError } from '../services/lexoffice-service.js';
 import { PauschaleError } from '../services/pauschale-service.js';
@@ -63,8 +64,17 @@ export function errorHandler(
     err instanceof KundeError ||
     err instanceof AuftragError
   ) {
-    const status =
-      err.code === 'NOT_FOUND' ? 404 : err.code === 'IN_USE' ? 409 : 400;
+    let status: number;
+    if (err.code === 'NOT_FOUND') status = 404;
+    else if (err.code === 'IN_USE') status = 409;
+    else if (err.code === 'TOO_MANY_FOTOS') status = 409;
+    else status = 400;
+    res.status(status).json({ error: err.message, code: err.code });
+    return;
+  }
+
+  if (err instanceof FotoError) {
+    const status = err.code === 'NOT_FOUND' ? 404 : 400;
     res.status(status).json({ error: err.message, code: err.code });
     return;
   }

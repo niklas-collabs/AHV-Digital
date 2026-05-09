@@ -6,13 +6,15 @@ import { getKunde } from './kunde-service.js';
 
 export class AuftragError extends Error {
   constructor(
-    public readonly code: 'NOT_FOUND' | 'INVALID_STATUS',
+    public readonly code: 'NOT_FOUND' | 'INVALID_STATUS' | 'TOO_MANY_FOTOS',
     message: string,
   ) {
     super(message);
     this.name = 'AuftragError';
   }
 }
+
+export const MAX_FOTOS_PER_AUFTRAG = 10;
 
 // === Zod-Schemas ===
 
@@ -48,7 +50,9 @@ export const auftragInputSchema = z.object({
   objekt_adresse: z.string().nullable().optional(),
   mitarbeiter: z.array(mitarbeiterSchema).default([]),
   materialien: z.array(materialSchema).default([]),
-  fotos: z.array(z.string()).default([]),
+  // fotos optional: wenn weggelassen, bleibt der existing-Wert beim Update
+  // bestehen. Foto-Mutations laufen über separate POST/DELETE-Endpoints.
+  fotos: z.array(z.string()).optional(),
   signature_data_url: z.string().nullable().optional(),
   checkliste: z.array(checklistenItemSchema).nullable().optional(),
 });
@@ -208,7 +212,7 @@ export function createAuftrag(db: Database.Database, input: AuftragInput): Auftr
     input.objekt_adresse ?? null,
     JSON.stringify(input.mitarbeiter),
     JSON.stringify(input.materialien),
-    JSON.stringify(input.fotos),
+    JSON.stringify(input.fotos ?? []),
     input.signature_data_url ?? null,
     input.checkliste === undefined || input.checkliste === null
       ? null
@@ -248,6 +252,11 @@ export function updateAuftrag(
     kundeIdToStore = existing.kunde_id;
   }
 
+  // Fotos werden nur überschrieben wenn sie im Input enthalten sind. Foto-
+  // Mutations laufen über separate POST/DELETE-Endpoints — beim normalen
+  // PUT bleiben die Fotos erhalten.
+  const fotosJson = input.fotos !== undefined ? JSON.stringify(input.fotos) : JSON.stringify(existing.fotos);
+
   const now = new Date().toISOString();
   db.prepare(
     `UPDATE auftrag
@@ -267,7 +276,7 @@ export function updateAuftrag(
     input.objekt_adresse ?? null,
     JSON.stringify(input.mitarbeiter),
     JSON.stringify(input.materialien),
-    JSON.stringify(input.fotos),
+    fotosJson,
     input.signature_data_url ?? null,
     input.checkliste === undefined || input.checkliste === null
       ? null
@@ -287,6 +296,66 @@ export function deleteAuftrag(db: Database.Database, id: string): void {
     throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
   }
   db.prepare('DELETE FROM auftrag WHERE id = ?').run(id);
+}
+
+/**
+ * Hängt einen Foto-Dateinamen an das fotos-Array des Auftrags an.
+ * Wirft TOO_MANY_FOTOS wenn Max erreicht ist.
+ */
+export function addFotoToAuftrag(
+  db: Database.Database,
+  id: string,
+  filename: string,
+): Auftrag {
+  const existing = getAuftrag(db, id);
+  if (!existing) {
+    throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
+  }
+  if (existing.fotos.length >= MAX_FOTOS_PER_AUFTRAG) {
+    throw new AuftragError(
+      'TOO_MANY_FOTOS',
+      `Maximal ${MAX_FOTOS_PER_AUFTRAG} Fotos pro Auftrag`,
+    );
+  }
+  const newFotos = [...existing.fotos, filename];
+  const now = new Date().toISOString();
+  db.prepare('UPDATE auftrag SET fotos = ?, geaendert_am = ? WHERE id = ?').run(
+    JSON.stringify(newFotos),
+    now,
+    id,
+  );
+  const updated = getAuftrag(db, id);
+  if (!updated) throw new Error('Auftrag verschwunden nach Foto-Add');
+  return updated;
+}
+
+/**
+ * Entfernt einen Foto-Dateinamen aus dem fotos-Array. Liefert true wenn
+ * der Eintrag entfernt wurde, false wenn er nicht in der Liste war.
+ */
+export function removeFotoFromAuftrag(
+  db: Database.Database,
+  id: string,
+  filename: string,
+): { auftrag: Auftrag; wasInList: boolean } {
+  const existing = getAuftrag(db, id);
+  if (!existing) {
+    throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
+  }
+  const wasInList = existing.fotos.includes(filename);
+  if (!wasInList) {
+    return { auftrag: existing, wasInList: false };
+  }
+  const newFotos = existing.fotos.filter((f) => f !== filename);
+  const now = new Date().toISOString();
+  db.prepare('UPDATE auftrag SET fotos = ?, geaendert_am = ? WHERE id = ?').run(
+    JSON.stringify(newFotos),
+    now,
+    id,
+  );
+  const updated = getAuftrag(db, id);
+  if (!updated) throw new Error('Auftrag verschwunden nach Foto-Remove');
+  return { auftrag: updated, wasInList: true };
 }
 
 /**
