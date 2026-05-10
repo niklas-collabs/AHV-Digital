@@ -8,6 +8,7 @@ import type {
   AuftragTyp,
   FirmaConfig,
   KundeSnapshot,
+  Teilleistung,
 } from '@ahv/shared';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -77,8 +78,19 @@ export function generateAuftragPdf(ctx: PdfContext): Promise<Buffer> {
       if (ctx.auftrag.materialien.length > 0) {
         drawMaterialTable(doc, ctx.auftrag.materialien, { showPrices });
       }
+
+      // Teilleistungen (Phase 2.7): jeweils eigener Block mit Datum,
+      // Bezeichnung, Mitarbeiter- und Material-Tabelle. Summen werden
+      // bei drawSummen über alle Materialien aufaddiert.
+      for (const t of ctx.auftrag.teilleistungen) {
+        drawTeilleistung(doc, t, { showPrices, showMitarbeiter });
+      }
+
       if (showPrices) {
-        drawSummen(doc, ctx.auftrag.materialien);
+        const allMat = collectAllMaterialien(ctx.auftrag);
+        if (allMat.length > 0) {
+          drawSummen(doc, allMat);
+        }
       }
 
       if (ctx.auftrag.typ !== 'angebot') {
@@ -411,6 +423,69 @@ function drawMaterialTable(
     }),
     { headerLabel: 'POSITIONEN' },
   );
+}
+
+// ============================================================================
+// Teilleistungen
+// ============================================================================
+
+function drawTeilleistung(
+  doc: PDFKit.PDFDocument,
+  t: Teilleistung,
+  options: { showPrices: boolean; showMitarbeiter: boolean },
+): void {
+  // Seitenumbruch wenn weniger als ~120 px Restplatz auf der Seite
+  if (doc.y > doc.page.height - PAGE_MARGIN - 120) {
+    doc.addPage();
+  }
+  doc.moveDown(0.5);
+
+  const right = doc.page.width - PAGE_MARGIN;
+  const headerY = doc.y;
+
+  doc
+    .font(F_BOLD)
+    .fontSize(11)
+    .fillColor(COLOR_HEAD)
+    .text(t.bezeichnung || 'Teilleistung', PAGE_MARGIN, headerY, {
+      width: right - PAGE_MARGIN - 100,
+    });
+
+  doc
+    .font(F_REGULAR)
+    .fontSize(9)
+    .fillColor(COLOR_MUTED)
+    .text(formatDate(t.datum), PAGE_MARGIN, headerY, {
+      width: right - PAGE_MARGIN,
+      align: 'right',
+    });
+
+  doc.fillColor(COLOR_TEXT);
+  doc.moveDown(0.3);
+
+  if (t.notiz.trim()) {
+    doc
+      .font(F_REGULAR)
+      .fontSize(9)
+      .fillColor(COLOR_MUTED)
+      .text(t.notiz, PAGE_MARGIN, doc.y, { width: right - PAGE_MARGIN });
+    doc.moveDown(0.3);
+    doc.fillColor(COLOR_TEXT);
+  }
+
+  if (options.showMitarbeiter && t.mitarbeiter.length > 0) {
+    drawMitarbeiterTable(doc, t.mitarbeiter);
+  }
+  if (t.materialien.length > 0) {
+    drawMaterialTable(doc, t.materialien, { showPrices: options.showPrices });
+  }
+}
+
+function collectAllMaterialien(auftrag: Auftrag): AuftragMaterial[] {
+  return [
+    ...auftrag.materialien,
+    ...auftrag.teilleistungen.flatMap((t) => t.materialien),
+  ];
 }
 
 // ============================================================================

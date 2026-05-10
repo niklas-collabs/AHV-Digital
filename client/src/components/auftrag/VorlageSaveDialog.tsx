@@ -23,6 +23,7 @@ export interface VorlageDataPayload {
   notiz_intern?: string;
   mitarbeiter?: unknown[];
   materialien?: unknown[];
+  teilleistungen?: unknown[];
 }
 
 interface VorlageSaveDialogProps {

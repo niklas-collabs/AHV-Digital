@@ -30,6 +30,18 @@ export interface ChecklistenItem {
   checked: boolean;
 }
 
+/** Teilleistung (Phase 2.7): ein Auftrag kann aus mehreren bestehen,
+ *  z.B. Etappen einer Großbaustelle. Jede Teilleistung hat eigenes Datum,
+ *  Mitarbeiter- und Material-Zeilen; Summen werden aufaddiert. */
+export interface Teilleistung {
+  id: string;
+  bezeichnung: string;
+  datum: string; // ISO date
+  notiz: string;
+  mitarbeiter: AuftragMitarbeiter[];
+  materialien: AuftragMaterial[];
+}
+
 export interface KundeSnapshot {
   typ: KundeTyp;
   firmenname: string | null;
@@ -57,6 +69,10 @@ export interface Auftrag {
   fotos: string[]; // Pfade zu Foto-Dateien (Server-side)
   signature_data_url: string | null;
   checkliste: ChecklistenItem[] | null;
+  /** Optionale Teilleistungen (Phase 2.7). Leer-Array wenn nicht
+   *  verwendet — Top-Level mitarbeiter/materialien bleiben dann
+   *  die einzige Datenquelle. */
+  teilleistungen: Teilleistung[];
   /** Verweis auf den Auftrag, aus dem dieser kopiert/konvertiert wurde
    *  (Pipeline 2.8). Null wenn neu angelegt. */
   urspruenglicher_auftrag_id: string | null;

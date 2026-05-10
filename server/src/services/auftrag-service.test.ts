@@ -329,4 +329,113 @@ describe('auftrag-service', () => {
       expect(() => duplicateAuftrag(db, 'nope')).toThrow(AuftragError);
     });
   });
+
+  describe('Teilleistungen', () => {
+    it('default leeres Array beim Anlegen ohne Eingabe', () => {
+      const db = makeDb();
+      const a = createAuftrag(db, baseInput());
+      expect(a.teilleistungen).toEqual([]);
+    });
+
+    it('persistiert mehrere Teilleistungen mit Mitarbeiter und Material', () => {
+      const db = makeDb();
+      const a = createAuftrag(
+        db,
+        baseInput({
+          teilleistungen: [
+            {
+              id: 'tl-1',
+              bezeichnung: 'Etappe 1',
+              datum: '2026-04-20',
+              notiz: '',
+              mitarbeiter: [
+                { name: 'Max', stufe_id: null, stufe_bezeichnung: 'Geselle', stundenpreis: 45, stunden: 4 },
+              ],
+              materialien: [
+                { name: 'Rohr', menge: 5, einheit: 'm', preis_netto: 12, mwst_prozent: 19, ist_lohnkosten: false },
+              ],
+            },
+            {
+              bezeichnung: 'Etappe 2',
+              datum: '2026-04-22',
+              notiz: 'Nacharbeit',
+              mitarbeiter: [],
+              materialien: [
+                { name: 'Schrauben', menge: 20, einheit: 'Stk', preis_netto: 0.5, mwst_prozent: 19, ist_lohnkosten: false },
+              ],
+            },
+          ],
+        }),
+      );
+      expect(a.teilleistungen.length).toBe(2);
+      expect(a.teilleistungen[0]?.id).toBe('tl-1');
+      expect(a.teilleistungen[0]?.mitarbeiter[0]?.name).toBe('Max');
+      // Zweite Teilleistung ohne id-Vorgabe — Service vergibt UUID
+      expect(a.teilleistungen[1]?.id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(a.teilleistungen[1]?.materialien[0]?.menge).toBe(20);
+    });
+
+    it('update überschreibt Teilleistungen', () => {
+      const db = makeDb();
+      const a = createAuftrag(
+        db,
+        baseInput({
+          teilleistungen: [
+            {
+              id: 'old',
+              bezeichnung: 'A',
+              datum: '2026-04-20',
+              notiz: '',
+              mitarbeiter: [],
+              materialien: [],
+            },
+          ],
+        }),
+      );
+      const updated = updateAuftrag(
+        db,
+        a.id,
+        baseInput({
+          teilleistungen: [
+            {
+              id: 'new',
+              bezeichnung: 'B',
+              datum: '2026-04-21',
+              notiz: '',
+              mitarbeiter: [],
+              materialien: [],
+            },
+          ],
+        }),
+      );
+      expect(updated.teilleistungen.length).toBe(1);
+      expect(updated.teilleistungen[0]?.id).toBe('new');
+      expect(updated.teilleistungen[0]?.bezeichnung).toBe('B');
+    });
+
+    it('duplicate kopiert Teilleistungen mit neuen IDs', () => {
+      const db = makeDb();
+      const source = createAuftrag(
+        db,
+        baseInput({
+          teilleistungen: [
+            {
+              id: 'tl-source',
+              bezeichnung: 'Etappe 1',
+              datum: '2026-04-20',
+              notiz: '',
+              mitarbeiter: [],
+              materialien: [],
+            },
+          ],
+        }),
+      );
+      const copy = duplicateAuftrag(db, source.id);
+      expect(copy.teilleistungen.length).toBe(1);
+      expect(copy.teilleistungen[0]?.bezeichnung).toBe('Etappe 1');
+      // Neue id, NICHT die der Quelle
+      expect(copy.teilleistungen[0]?.id).not.toBe('tl-source');
+      expect(copy.teilleistungen[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
+    });
+  });
 });

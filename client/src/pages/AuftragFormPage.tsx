@@ -7,6 +7,7 @@ import type {
   AuftragMaterial,
   AuftragMitarbeiter,
   AuftragTyp,
+  Teilleistung,
 } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +45,7 @@ import {
   type VorlageDataPayload,
 } from '@/components/auftrag/VorlageSaveDialog';
 import { AuftragAktionenDialog } from '@/components/auftrag/AuftragAktionenDialog';
+import { TeilleistungenSection } from '@/components/auftrag/TeilleistungenSection';
 
 interface FormState {
   typ: AuftragTyp;
@@ -56,6 +58,7 @@ interface FormState {
   mitarbeiter: AuftragMitarbeiter[];
   materialien: AuftragMaterial[];
   signature_data_url: string | null;
+  teilleistungen: Teilleistung[];
 }
 
 const todayIso = (): string => new Date().toISOString().slice(0, 10);
@@ -71,6 +74,7 @@ const EMPTY_STATE: FormState = {
   mitarbeiter: [],
   materialien: [],
   signature_data_url: null,
+  teilleistungen: [],
 };
 
 function fromAuftrag(a: Auftrag): FormState {
@@ -85,6 +89,7 @@ function fromAuftrag(a: Auftrag): FormState {
     mitarbeiter: a.mitarbeiter,
     materialien: a.materialien,
     signature_data_url: a.signature_data_url,
+    teilleistungen: a.teilleistungen,
   };
 }
 
@@ -102,6 +107,7 @@ function toInput(state: FormState): AuftragInput {
     fotos: [],
     // Unterschrift nur bei Arbeitszettel mitsenden — sonst leeren
     signature_data_url: state.typ === 'arbeitszettel' ? state.signature_data_url : null,
+    teilleistungen: state.teilleistungen,
   };
 }
 
@@ -145,6 +151,12 @@ export function AuftragFormPage() {
     const vorlage = navState?.vorlage;
     if (!vorlage) return;
     const d = vorlage.data;
+    // Teilleistungen aus der Vorlage mit frischen IDs, sonst kollidiert
+    // jede aus der Vorlage erzeugte Instanz mit den anderen
+    const teilleistungen = (d.teilleistungen ?? []).map((t) => ({
+      ...t,
+      id: crypto.randomUUID(),
+    }));
     setState((s) => ({
       ...s,
       typ: vorlage.typ,
@@ -153,6 +165,7 @@ export function AuftragFormPage() {
       notiz_intern: d.notiz_intern ?? s.notiz_intern,
       mitarbeiter: d.mitarbeiter ?? s.mitarbeiter,
       materialien: d.materialien ?? s.materialien,
+      teilleistungen,
     }));
     // location.state einmal verbrauchen, damit beim Reload nicht nochmal angewendet
     navigate(location.pathname, { replace: true, state: null });
@@ -248,7 +261,13 @@ export function AuftragFormPage() {
     0,
   );
   const totalMaterial = state.materialien.reduce((sum, m) => sum + m.preis_netto * m.menge, 0);
-  const totalNetto = totalMitarbeiter + totalMaterial;
+  // Teilleistungen aufsummieren — Mitarbeiter UND Material je Teilleistung
+  const totalTeilleistungen = state.teilleistungen.reduce((sum, t) => {
+    const ma = t.mitarbeiter.reduce((s, m) => s + m.stundenpreis * m.stunden, 0);
+    const mat = t.materialien.reduce((s, m) => s + m.preis_netto * m.menge, 0);
+    return sum + ma + mat;
+  }, 0);
+  const totalNetto = totalMitarbeiter + totalMaterial + totalTeilleistungen;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -402,6 +421,24 @@ export function AuftragFormPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Teilleistungen</CardTitle>
+            <CardDescription className="text-xs">
+              Optional. Bei Etappen-Aufträgen pro Etappe eine Teilleistung mit
+              eigenem Datum, Mitarbeitern und Material. Im PDF werden alle
+              aufsummiert.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TeilleistungenSection
+              rows={state.teilleistungen}
+              onChange={(teilleistungen) => setState((s) => ({ ...s, teilleistungen }))}
+              disabled={disabled}
+            />
+          </CardContent>
+        </Card>
+
         {isEdit && existing && (
           <Card>
             <CardHeader className="pb-3">
@@ -484,6 +521,7 @@ export function AuftragFormPage() {
             notiz_intern: state.notiz_intern,
             mitarbeiter: state.mitarbeiter,
             materialien: state.materialien,
+            teilleistungen: state.teilleistungen,
           } satisfies VorlageDataPayload
         }
       />

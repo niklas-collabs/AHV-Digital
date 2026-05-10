@@ -1,7 +1,14 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { Auftrag, AuftragStatus, AuftragTyp, Kunde, KundeSnapshot } from '@ahv/shared';
+import type {
+  Auftrag,
+  AuftragStatus,
+  AuftragTyp,
+  Kunde,
+  KundeSnapshot,
+  Teilleistung,
+} from '@ahv/shared';
 import { getKunde } from './kunde-service.js';
 
 export class AuftragError extends Error {
@@ -40,6 +47,17 @@ const checklistenItemSchema = z.object({
   checked: z.boolean(),
 });
 
+const teilleistungSchema = z.object({
+  // id ist optional — Service vergibt eine, falls fehlend (Frontend kann
+  // beim Anlegen lokal eine generieren oder es dem Server überlassen)
+  id: z.string().min(1).optional(),
+  bezeichnung: z.string().max(200).default(''),
+  datum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Datum als YYYY-MM-DD'),
+  notiz: z.string().default(''),
+  mitarbeiter: z.array(mitarbeiterSchema).default([]),
+  materialien: z.array(materialSchema).default([]),
+});
+
 export const auftragInputSchema = z.object({
   typ: z.enum(['arbeitszettel', 'angebot', 'lieferschein']),
   titel: z.string().min(1, 'Titel ist Pflicht').max(200),
@@ -55,6 +73,7 @@ export const auftragInputSchema = z.object({
   fotos: z.array(z.string()).optional(),
   signature_data_url: z.string().nullable().optional(),
   checkliste: z.array(checklistenItemSchema).nullable().optional(),
+  teilleistungen: z.array(teilleistungSchema).default([]),
 });
 
 export type AuftragInput = z.infer<typeof auftragInputSchema>;
@@ -77,6 +96,7 @@ interface AuftragRow {
   fotos: string;
   signature_data_url: string | null;
   checkliste: string | null;
+  teilleistungen: string;
   urspruenglicher_auftrag_id: string | null;
   erstellt_am: string;
   geaendert_am: string;
@@ -109,6 +129,7 @@ function rowToAuftrag(row: AuftragRow): Auftrag {
     fotos: safeParse(row.fotos, []),
     signature_data_url: row.signature_data_url,
     checkliste: row.checkliste === null ? null : safeParse(row.checkliste, []),
+    teilleistungen: safeParse(row.teilleistungen, []),
     urspruenglicher_auftrag_id: row.urspruenglicher_auftrag_id,
     erstellt_am: row.erstellt_am,
     geaendert_am: row.geaendert_am,
@@ -127,6 +148,22 @@ function emptyKundeSnapshot(): KundeSnapshot {
     plz: null,
     ort: null,
   };
+}
+
+/**
+ * Sorgt dafür, dass jede Teilleistung eine id hat. Frontend kann eine
+ * mitgeben (z.B. zur Reihenfolge-Stabilität bei Updates) — fehlende
+ * werden hier vergeben.
+ */
+function normalizeTeilleistungen(input: AuftragInput['teilleistungen']): Teilleistung[] {
+  return input.map((t) => ({
+    id: t.id ?? randomUUID(),
+    bezeichnung: t.bezeichnung,
+    datum: t.datum,
+    notiz: t.notiz,
+    mitarbeiter: t.mitarbeiter,
+    materialien: t.materialien,
+  }));
 }
 
 function buildSnapshot(kunde: Kunde): KundeSnapshot {
@@ -195,13 +232,16 @@ export function createAuftrag(db: Database.Database, input: AuftragInput): Auftr
     if (kunde) snapshot = buildSnapshot(kunde);
   }
 
+  const teilleistungen = normalizeTeilleistungen(input.teilleistungen);
+
   db.prepare(
     `INSERT INTO auftrag (
        id, typ, status, titel, datum, beschreibung, notiz_intern,
        kunde_id, kunde_snapshot, objekt_adresse,
        mitarbeiter, materialien, fotos, signature_data_url, checkliste,
+       teilleistungen,
        erstellt_am, geaendert_am, abgeschickt_am
-     ) VALUES (?, ?, 'entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+     ) VALUES (?, ?, 'entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   ).run(
     id,
     input.typ,
@@ -219,6 +259,7 @@ export function createAuftrag(db: Database.Database, input: AuftragInput): Auftr
     input.checkliste === undefined || input.checkliste === null
       ? null
       : JSON.stringify(input.checkliste),
+    JSON.stringify(teilleistungen),
     now,
     now,
   );
@@ -259,13 +300,14 @@ export function updateAuftrag(
   // PUT bleiben die Fotos erhalten.
   const fotosJson = input.fotos !== undefined ? JSON.stringify(input.fotos) : JSON.stringify(existing.fotos);
 
+  const teilleistungen = normalizeTeilleistungen(input.teilleistungen);
   const now = new Date().toISOString();
   db.prepare(
     `UPDATE auftrag
      SET typ = ?, titel = ?, datum = ?, beschreibung = ?, notiz_intern = ?,
          kunde_id = ?, kunde_snapshot = ?, objekt_adresse = ?,
          mitarbeiter = ?, materialien = ?, fotos = ?,
-         signature_data_url = ?, checkliste = ?, geaendert_am = ?
+         signature_data_url = ?, checkliste = ?, teilleistungen = ?, geaendert_am = ?
      WHERE id = ?`,
   ).run(
     input.typ,
@@ -283,6 +325,7 @@ export function updateAuftrag(
     input.checkliste === undefined || input.checkliste === null
       ? null
       : JSON.stringify(input.checkliste),
+    JSON.stringify(teilleistungen),
     now,
     id,
   );
@@ -388,14 +431,21 @@ export function duplicateAuftrag(
   const today = now.slice(0, 10);
   const targetTyp = options.typ ?? source.typ;
 
+  // Teilleistungen mit neuen IDs kopieren — sonst hätten beide Aufträge
+  // dieselben Teilleistungs-IDs, was bei der UI-Identifikation stört
+  const teilleistungen: Teilleistung[] = source.teilleistungen.map((t) => ({
+    ...t,
+    id: randomUUID(),
+  }));
+
   db.prepare(
     `INSERT INTO auftrag (
        id, typ, status, titel, datum, beschreibung, notiz_intern,
        kunde_id, kunde_snapshot, objekt_adresse,
        mitarbeiter, materialien, fotos, signature_data_url, checkliste,
-       urspruenglicher_auftrag_id,
+       teilleistungen, urspruenglicher_auftrag_id,
        erstellt_am, geaendert_am, abgeschickt_am
-     ) VALUES (?, ?, 'entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', NULL, ?, ?, ?, ?, NULL)`,
+     ) VALUES (?, ?, 'entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', NULL, ?, ?, ?, ?, ?, NULL)`,
   ).run(
     id,
     targetTyp,
@@ -409,6 +459,7 @@ export function duplicateAuftrag(
     JSON.stringify(source.mitarbeiter),
     JSON.stringify(source.materialien),
     source.checkliste === null ? null : JSON.stringify(source.checkliste),
+    JSON.stringify(teilleistungen),
     source.id,
     now,
     now,

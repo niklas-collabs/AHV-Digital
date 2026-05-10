@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Auftrag, AuftragStatus } from '@ahv/shared';
+import type { Auftrag, AuftragStatus, Teilleistung } from '@ahv/shared';
 import { apiClient } from '@/lib/api';
 
 export const AUFTRAEGE_QUERY_KEY = 'auftraege';
@@ -23,6 +23,7 @@ export interface AuftragInput {
   fotos: string[];
   signature_data_url?: string | null;
   checkliste?: Auftrag['checkliste'];
+  teilleistungen: Teilleistung[];
 }
 
 function buildQuery(filter: AuftraegeFilter): string {
