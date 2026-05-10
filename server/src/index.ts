@@ -17,6 +17,7 @@ import { logoRouter } from './routes/logo.js';
 import { mailRouter } from './routes/mail.js';
 import { pauschaleRouter } from './routes/pauschale.js';
 import { stufeRouter } from './routes/stufe.js';
+import { vorlageRouter } from './routes/vorlage.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
@@ -81,6 +82,7 @@ app.use('/api/kunden', kundeRouter);
 app.use('/api/auftraege', auftragRouter);
 app.use('/api/lexoffice', lexofficeRouter);
 app.use('/api/mail', mailRouter);
+app.use('/api/vorlagen', vorlageRouter);
 // (1.8 ergaenzt /api/auftraege/:id/pdf)
 
 // === Static-Serve (Production) ===

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
+  BookOpen,
   ClipboardList,
   FileDown,
   FileText,
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError } from '@/lib/api';
 import { useAuftraege, useDeleteAuftrag } from '@/hooks/useAuftraege';
+import { VorlageListDialog } from '@/components/auftrag/VorlageListDialog';
 import { cn } from '@/lib/utils';
 
 const TYP_ICON: Record<AuftragTyp, typeof FileText> = {
@@ -30,9 +32,11 @@ const TYP_LABEL: Record<AuftragTyp, string> = {
 };
 
 export function AuftraegePage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<AuftragStatus>('entwurf');
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
+  const [showVorlageList, setShowVorlageList] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
@@ -49,6 +53,15 @@ export function AuftraegePage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
           <h1 className="flex-1 text-lg font-semibold">Aufträge</h1>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowVorlageList(true)}
+            title="Aus Vorlage anlegen"
+          >
+            <BookOpen className="h-4 w-4" />
+            Vorlage
+          </Button>
           <Button asChild>
             <Link to="/auftraege/neu">
               <Plus className="h-4 w-4" />
@@ -105,6 +118,17 @@ export function AuftraegePage() {
           </ul>
         )}
       </main>
+
+      <VorlageListDialog
+        open={showVorlageList}
+        onClose={() => setShowVorlageList(false)}
+        onPick={(v) => {
+          setShowVorlageList(false);
+          navigate('/auftraege/neu', {
+            state: { vorlage: { typ: v.typ, data: v.data } },
+          });
+        }}
+      />
     </>
   );
 }

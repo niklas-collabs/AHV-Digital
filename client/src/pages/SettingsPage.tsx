@@ -21,6 +21,7 @@ import { StufenSection } from '@/components/settings/StufenSection';
 import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
 import { GmailSection } from '@/components/settings/GmailSection';
+import { VorlagenSection } from '@/components/settings/VorlagenSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -98,6 +99,20 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <PauschalenSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Vorlagen</CardTitle>
+            <CardDescription>
+              Wiederkehrende Aufträge als Vorlage speichern und beim Anlegen
+              wiederverwenden. „Als Vorlage speichern" findet sich in jedem
+              geöffneten Auftrag.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VorlagenSection />
           </CardContent>
         </Card>
 

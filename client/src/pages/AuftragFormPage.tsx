@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileDown, Send, Trash2 } from 'lucide-react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, BookmarkPlus, FileDown, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
   Auftrag,
@@ -39,6 +39,10 @@ import {
   AbschickenDialog,
   type AbschickenOptions,
 } from '@/components/auftrag/AbschickenDialog';
+import {
+  VorlageSaveDialog,
+  type VorlageDataPayload,
+} from '@/components/auftrag/VorlageSaveDialog';
 
 interface FormState {
   typ: AuftragTyp;
@@ -109,9 +113,14 @@ function toUpdateInput(state: FormState): AuftragInput {
   return input;
 }
 
+interface VorlageNavState {
+  vorlage?: { typ: AuftragTyp; data: Partial<Auftrag> };
+}
+
 export function AuftragFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEdit = !!id;
 
   const { data: existing, isLoading } = useAuftrag(id ?? null);
@@ -121,10 +130,31 @@ export function AuftragFormPage() {
   const abschicken = useAbschickenAuftrag();
 
   const [state, setState] = useState<FormState>(EMPTY_STATE);
+  const [showVorlageSaveDialog, setShowVorlageSaveDialog] = useState(false);
 
   useEffect(() => {
     if (existing) setState(fromAuftrag(existing));
   }, [existing]);
+
+  // Beim Anlegen aus einer Vorlage: location.state übernehmen
+  useEffect(() => {
+    if (isEdit) return;
+    const navState = location.state as VorlageNavState | null;
+    const vorlage = navState?.vorlage;
+    if (!vorlage) return;
+    const d = vorlage.data;
+    setState((s) => ({
+      ...s,
+      typ: vorlage.typ,
+      titel: d.titel ?? s.titel,
+      beschreibung: d.beschreibung ?? s.beschreibung,
+      notiz_intern: d.notiz_intern ?? s.notiz_intern,
+      mitarbeiter: d.mitarbeiter ?? s.mitarbeiter,
+      materialien: d.materialien ?? s.materialien,
+    }));
+    // location.state einmal verbrauchen, damit beim Reload nicht nochmal angewendet
+    navigate(location.pathname, { replace: true, state: null });
+  }, [isEdit, location.state, location.pathname, navigate]);
 
   const isAbgeschickt = existing?.status === 'abgeschickt';
   const disabled =
@@ -416,6 +446,22 @@ export function AuftragFormPage() {
         isPending={create.isPending || update.isPending || abschicken.isPending}
       />
 
+      <VorlageSaveDialog
+        open={showVorlageSaveDialog}
+        onClose={() => setShowVorlageSaveDialog(false)}
+        typ={state.typ}
+        defaultName={state.titel.trim()}
+        data={
+          {
+            titel: state.titel.trim(),
+            beschreibung: state.beschreibung,
+            notiz_intern: state.notiz_intern,
+            mitarbeiter: state.mitarbeiter,
+            materialien: state.materialien,
+          } satisfies VorlageDataPayload
+        }
+      />
+
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 p-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           {isEdit && !isAbgeschickt && (
@@ -442,6 +488,19 @@ export function AuftragFormPage() {
               title="PDF öffnen"
             >
               <FileDown className="h-4 w-4" />
+            </Button>
+          )}
+          {!isAbgeschickt && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setShowVorlageSaveDialog(true)}
+              disabled={disabled}
+              aria-label="Als Vorlage speichern"
+              title="Als Vorlage speichern"
+            >
+              <BookmarkPlus className="h-4 w-4" />
             </Button>
           )}
           <Button
