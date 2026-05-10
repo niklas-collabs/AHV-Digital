@@ -36,6 +36,46 @@ export function useUploadFoto() {
   });
 }
 
+/**
+ * Überschreibt ein bestehendes Foto (z.B. nach Annotation). Filename
+ * bleibt gleich, das fotos-Array des Auftrags wird nicht angefasst.
+ */
+export function useReplaceFoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      auftragId,
+      filename,
+      blob,
+    }: {
+      auftragId: string;
+      filename: string;
+      blob: Blob;
+    }) => {
+      const fd = new FormData();
+      fd.append('foto', blob, filename);
+      const res = await fetch(
+        `/api/auftraege/${encodeURIComponent(auftragId)}/fotos/${encodeURIComponent(filename)}`,
+        { method: 'PUT', credentials: 'include', body: fd },
+      );
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          (data.code as string) ?? 'UNKNOWN',
+          (data.error as string) ?? 'Foto-Speichern fehlgeschlagen',
+          data,
+        );
+      }
+      return data as Auftrag;
+    },
+    onSuccess: (_data, { auftragId }) => {
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY, auftragId] });
+    },
+  });
+}
+
 export function useDeleteFoto() {
   const qc = useQueryClient();
   return useMutation({

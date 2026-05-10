@@ -17,9 +17,11 @@ import { getConfig } from '../services/config-service.js';
 import { readLogo } from '../services/logo-service.js';
 import { sendAuftragMail } from '../services/mail-service.js';
 import {
+  FotoError,
   deleteFotoFile,
   fotoUploadMiddleware,
   readFoto,
+  replaceFoto,
   saveFoto,
 } from '../services/foto-service.js';
 import { generateAuftragPdf } from '../lib/pdf-generator.js';
@@ -220,6 +222,32 @@ auftragRouter.delete('/:id/fotos/:filename', (req, res, next) => {
       deleteFotoFile(resolveUploadsDir(), id, filename);
     }
     res.json(result.auftrag);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Foto-Annotation (Phase 2.4): Editor lädt das Bild, malt drauf und
+// schickt das gerenderte Ergebnis zurück. Filename bleibt gleich, das
+// fotos-Array des Auftrags wird nicht verändert.
+auftragRouter.put('/:id/fotos/:filename', fotoUploadMiddleware, async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'Keine Datei hochgeladen', code: 'NO_FILE' });
+      return;
+    }
+    const { id, filename } = req.params as { id: string; filename: string };
+    const db = getDb();
+    const auftrag = getAuftrag(db, id);
+    if (!auftrag) {
+      res.status(404).json({ error: 'Auftrag nicht gefunden', code: 'NOT_FOUND' });
+      return;
+    }
+    if (!auftrag.fotos.includes(filename)) {
+      throw new FotoError('NOT_FOUND', 'Foto gehört nicht zu diesem Auftrag');
+    }
+    await replaceFoto(resolveUploadsDir(), id, filename, req.file.buffer);
+    res.json(auftrag);
   } catch (err) {
     next(err);
   }

@@ -90,6 +90,46 @@ export async function saveFoto(
 }
 
 /**
+ * Überschreibt ein bestehendes Foto unter gleichem Dateinamen — wird
+ * bei der Annotation (Phase 2.4) genutzt, damit das fotos-Array im
+ * Auftrag nicht angefasst werden muss. Wirft NOT_FOUND, wenn die
+ * Originaldatei nicht existiert (verhindert versehentliches Anlegen
+ * neuer Dateien per PUT).
+ */
+export async function replaceFoto(
+  uploadsDir: string,
+  auftragId: string,
+  filename: string,
+  buffer: Buffer,
+): Promise<void> {
+  const safeFilename = sanitizeFilename(filename);
+  const dir = fotoDir(uploadsDir, auftragId);
+  const fullPath = path.join(dir, safeFilename);
+  if (!existsSync(fullPath)) {
+    throw new FotoError('NOT_FOUND', 'Foto nicht gefunden');
+  }
+  try {
+    const processed = await sharp(buffer, { failOn: 'truncated' })
+      .rotate()
+      .resize({
+        width: MAX_DIMENSION,
+        height: MAX_DIMENSION,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+      .toBuffer();
+    writeFileSync(fullPath, processed);
+  } catch (err) {
+    if (err instanceof FotoError) throw err;
+    throw new FotoError(
+      'PROCESS_FAILED',
+      err instanceof Error ? err.message : 'Bild konnte nicht verarbeitet werden',
+    );
+  }
+}
+
+/**
  * Liest ein Foto als Buffer. Liefert null wenn die Datei nicht existiert
  * (z.B. weil sie auf einem anderen Render-Deploy verloren ging).
  */
