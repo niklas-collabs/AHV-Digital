@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookmarkPlus, FileDown, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookmarkPlus, FileDown, MoreVertical, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
   Auftrag,
@@ -43,6 +43,7 @@ import {
   VorlageSaveDialog,
   type VorlageDataPayload,
 } from '@/components/auftrag/VorlageSaveDialog';
+import { AuftragAktionenDialog } from '@/components/auftrag/AuftragAktionenDialog';
 
 interface FormState {
   typ: AuftragTyp;
@@ -131,6 +132,7 @@ export function AuftragFormPage() {
 
   const [state, setState] = useState<FormState>(EMPTY_STATE);
   const [showVorlageSaveDialog, setShowVorlageSaveDialog] = useState(false);
+  const [showAktionenDialog, setShowAktionenDialog] = useState(false);
 
   useEffect(() => {
     if (existing) setState(fromAuftrag(existing));
@@ -265,7 +267,31 @@ export function AuftragFormPage() {
               </span>
             )}
           </h1>
+          {isEdit && existing && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowAktionenDialog(true)}
+              aria-label="Weitere Aktionen"
+              title="Aktionen (Duplizieren, Konvertieren)"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          )}
         </div>
+        {existing?.urspruenglicher_auftrag_id && (
+          <div className="mx-auto max-w-3xl px-4 pb-2 text-xs text-muted-foreground">
+            Aus{' '}
+            <Link
+              to={`/auftraege/${existing.urspruenglicher_auftrag_id}/edit`}
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              vorherigem Auftrag
+            </Link>{' '}
+            übernommen
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 p-4 pb-32">
@@ -461,6 +487,15 @@ export function AuftragFormPage() {
           } satisfies VorlageDataPayload
         }
       />
+
+      {existing && (
+        <AuftragAktionenDialog
+          open={showAktionenDialog}
+          onClose={() => setShowAktionenDialog(false)}
+          auftragId={existing.id}
+          currentTyp={state.typ}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 p-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2">

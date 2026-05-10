@@ -77,6 +77,7 @@ interface AuftragRow {
   fotos: string;
   signature_data_url: string | null;
   checkliste: string | null;
+  urspruenglicher_auftrag_id: string | null;
   erstellt_am: string;
   geaendert_am: string;
   abgeschickt_am: string | null;
@@ -108,6 +109,7 @@ function rowToAuftrag(row: AuftragRow): Auftrag {
     fotos: safeParse(row.fotos, []),
     signature_data_url: row.signature_data_url,
     checkliste: row.checkliste === null ? null : safeParse(row.checkliste, []),
+    urspruenglicher_auftrag_id: row.urspruenglicher_auftrag_id,
     erstellt_am: row.erstellt_am,
     geaendert_am: row.geaendert_am,
     abgeschickt_am: row.abgeschickt_am,
@@ -356,6 +358,65 @@ export function removeFotoFromAuftrag(
   const updated = getAuftrag(db, id);
   if (!updated) throw new Error('Auftrag verschwunden nach Foto-Remove');
   return { auftrag: updated, wasInList: true };
+}
+
+/**
+ * Erzeugt eine Kopie eines Auftrags. Optional mit anderem Typ
+ * (Pipeline-Konvertierung Angebot -> Arbeitszettel etc.). Die Kopie:
+ *
+ * - bekommt eine neue id und status='entwurf'
+ * - datum=heute (ein Angebot von letzter Woche soll nicht mit altem
+ *   Datum als Arbeitszettel weiterleben)
+ * - übernimmt Titel, Beschreibung, interne Notiz, Kunde, Adresse,
+ *   Mitarbeiter, Material, Checkliste
+ * - lässt Fotos und Unterschrift bewusst leer (Foto-Pfade verweisen auf
+ *   Dateien des Originals; Signaturen sind ein-Auftrag-spezifisch)
+ * - speichert urspruenglicher_auftrag_id für Nachverfolgung
+ */
+export function duplicateAuftrag(
+  db: Database.Database,
+  sourceId: string,
+  options: { typ?: AuftragTyp } = {},
+): Auftrag {
+  const source = getAuftrag(db, sourceId);
+  if (!source) {
+    throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
+  }
+
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+  const targetTyp = options.typ ?? source.typ;
+
+  db.prepare(
+    `INSERT INTO auftrag (
+       id, typ, status, titel, datum, beschreibung, notiz_intern,
+       kunde_id, kunde_snapshot, objekt_adresse,
+       mitarbeiter, materialien, fotos, signature_data_url, checkliste,
+       urspruenglicher_auftrag_id,
+       erstellt_am, geaendert_am, abgeschickt_am
+     ) VALUES (?, ?, 'entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', NULL, ?, ?, ?, ?, NULL)`,
+  ).run(
+    id,
+    targetTyp,
+    source.titel,
+    today,
+    source.beschreibung,
+    source.notiz_intern,
+    source.kunde_id,
+    JSON.stringify(source.kunde_snapshot),
+    source.objekt_adresse,
+    JSON.stringify(source.mitarbeiter),
+    JSON.stringify(source.materialien),
+    source.checkliste === null ? null : JSON.stringify(source.checkliste),
+    source.id,
+    now,
+    now,
+  );
+
+  const created = getAuftrag(db, id);
+  if (!created) throw new Error('Auftrag wurde dupliziert aber nicht gefunden');
+  return created;
 }
 
 /**

@@ -57,6 +57,9 @@ export interface Auftrag {
   fotos: string[]; // Pfade zu Foto-Dateien (Server-side)
   signature_data_url: string | null;
   checkliste: ChecklistenItem[] | null;
+  /** Verweis auf den Auftrag, aus dem dieser kopiert/konvertiert wurde
+   *  (Pipeline 2.8). Null wenn neu angelegt. */
+  urspruenglicher_auftrag_id: string | null;
   erstellt_am: string; // ISO datetime
   geaendert_am: string;
   abgeschickt_am: string | null;

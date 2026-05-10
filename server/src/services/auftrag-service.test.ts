@@ -11,6 +11,7 @@ import {
   auftragInputSchema,
   createAuftrag,
   deleteAuftrag,
+  duplicateAuftrag,
   getAuftrag,
   listAuftraege,
   updateAuftrag,
@@ -243,6 +244,89 @@ describe('auftrag-service', () => {
     it('wirft NOT_FOUND für unbekannte ID', () => {
       const db = makeDb();
       expect(() => abschickenAuftrag(db, 'nope')).toThrow(AuftragError);
+    });
+  });
+
+  describe('duplicateAuftrag', () => {
+    it('kopiert Inhalt und setzt urspruenglicher_auftrag_id', () => {
+      const db = makeDb();
+      const k = createKunde(db, { typ: 'privat', vorname: 'Max', nachname: 'M' });
+      const source = createAuftrag(
+        db,
+        baseInput({
+          kunde_id: k.id,
+          titel: 'Original',
+          beschreibung: 'Heizung tauschen',
+          mitarbeiter: [
+            { name: 'Max', stufe_id: null, stufe_bezeichnung: 'Geselle', stundenpreis: 45, stunden: 4 },
+          ],
+          materialien: [
+            { name: 'Rohr', menge: 2, einheit: 'm', preis_netto: 10, mwst_prozent: 19, ist_lohnkosten: false },
+          ],
+        }),
+      );
+
+      const copy = duplicateAuftrag(db, source.id);
+      expect(copy.id).not.toBe(source.id);
+      expect(copy.typ).toBe(source.typ);
+      expect(copy.titel).toBe('Original');
+      expect(copy.beschreibung).toBe('Heizung tauschen');
+      expect(copy.mitarbeiter).toEqual(source.mitarbeiter);
+      expect(copy.materialien).toEqual(source.materialien);
+      expect(copy.kunde_id).toBe(k.id);
+      expect(copy.kunde_snapshot.nachname).toBe('M');
+      expect(copy.status).toBe('entwurf');
+      expect(copy.urspruenglicher_auftrag_id).toBe(source.id);
+    });
+
+    it('setzt datum auf heute, leert fotos und signatur', () => {
+      const db = makeDb();
+      const source = createAuftrag(
+        db,
+        baseInput({
+          datum: '2020-01-01',
+          fotos: ['foto1.jpg'],
+          signature_data_url: 'data:image/png;base64,xxx',
+        }),
+      );
+
+      const copy = duplicateAuftrag(db, source.id);
+      expect(copy.datum).toBe(new Date().toISOString().slice(0, 10));
+      expect(copy.fotos).toEqual([]);
+      expect(copy.signature_data_url).toBeNull();
+    });
+
+    it('konvertiert Typ wenn typ-Option gesetzt ist', () => {
+      const db = makeDb();
+      const angebot = createAuftrag(db, baseInput({ typ: 'angebot', titel: 'Bad-Sanierung' }));
+      const arbeitszettel = duplicateAuftrag(db, angebot.id, { typ: 'arbeitszettel' });
+      expect(arbeitszettel.typ).toBe('arbeitszettel');
+      expect(arbeitszettel.titel).toBe('Bad-Sanierung');
+      expect(arbeitszettel.urspruenglicher_auftrag_id).toBe(angebot.id);
+    });
+
+    it('Original behält den Verweis auch wenn Original geändert wird', () => {
+      const db = makeDb();
+      const source = createAuftrag(db, baseInput({ titel: 'Original' }));
+      const copy = duplicateAuftrag(db, source.id);
+      updateAuftrag(db, source.id, baseInput({ titel: 'Geändert' }));
+      const reloaded = getAuftrag(db, copy.id);
+      expect(reloaded?.urspruenglicher_auftrag_id).toBe(source.id);
+    });
+
+    it('verliert Verweis wenn Original gelöscht wird (ON DELETE SET NULL)', () => {
+      const db = makeDb();
+      const source = createAuftrag(db, baseInput({ titel: 'Original' }));
+      const copy = duplicateAuftrag(db, source.id);
+      deleteAuftrag(db, source.id);
+      const reloaded = getAuftrag(db, copy.id);
+      expect(reloaded).not.toBeNull();
+      expect(reloaded?.urspruenglicher_auftrag_id).toBeNull();
+    });
+
+    it('wirft NOT_FOUND für unbekannte Quell-ID', () => {
+      const db = makeDb();
+      expect(() => duplicateAuftrag(db, 'nope')).toThrow(AuftragError);
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   auftragInputSchema,
   createAuftrag,
   deleteAuftrag,
+  duplicateAuftrag,
   getAuftrag,
   listAuftraege,
   removeFotoFromAuftrag,
@@ -139,6 +140,27 @@ auftragRouter.delete('/:id', (req, res, next) => {
   try {
     deleteAuftrag(getDb(), req.params.id);
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// === Pipeline-Konvertierung (Phase 2.8) ===
+
+const duplicateBody = z
+  .object({
+    typ: z.enum(['arbeitszettel', 'angebot', 'lieferschein']).optional(),
+  })
+  .optional();
+
+// Erzeugt eine Kopie. Body { typ } optional — wenn gesetzt wird der Typ
+// gewechselt (Konvertierung Angebot -> Arbeitszettel etc.); ohne typ
+// reine Duplikat-Funktion.
+auftragRouter.post('/:id/duplicate', (req, res, next) => {
+  try {
+    const body = duplicateBody.parse(req.body) ?? {};
+    const created = duplicateAuftrag(getDb(), req.params.id, body);
+    res.status(201).json(created);
   } catch (err) {
     next(err);
   }

@@ -85,6 +85,18 @@ export function useDeleteAuftrag() {
   });
 }
 
+export function useDuplicateAuftrag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, typ }: { id: string; typ?: 'arbeitszettel' | 'angebot' | 'lieferschein' }) =>
+      apiClient<Auftrag>(`/api/auftraege/${encodeURIComponent(id)}/duplicate`, {
+        method: 'POST',
+        body: typ ? { typ } : {},
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] }),
+  });
+}
+
 export interface AbschickenOptions {
   sendKunde?: boolean;
   sendFotos?: boolean;
