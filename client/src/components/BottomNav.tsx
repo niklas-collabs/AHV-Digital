@@ -14,7 +14,7 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   { to: '/auftraege', icon: ClipboardList, label: 'Aufträge' },
   { to: '/kunden', icon: Users, label: 'Kunden' },
-  { to: '/wartung', icon: Wrench, label: 'Wartung', disabled: true, comingIn: 'Phase 3.1' },
+  { to: '/wartung', icon: Wrench, label: 'Wartung' },
   { to: '/settings', icon: Settings, label: 'Mehr' },
 ];
 

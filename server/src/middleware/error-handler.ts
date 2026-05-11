@@ -11,6 +11,7 @@ import { MailServiceError } from '../services/mail-service.js';
 import { PauschaleError } from '../services/pauschale-service.js';
 import { StufeError } from '../services/stufe-service.js';
 import { VorlageError } from '../services/vorlage-service.js';
+import { WartungError } from '../services/wartungsplan-service.js';
 import { logger } from '../lib/logger.js';
 
 /**
@@ -65,7 +66,8 @@ export function errorHandler(
     err instanceof PauschaleError ||
     err instanceof KundeError ||
     err instanceof AuftragError ||
-    err instanceof VorlageError
+    err instanceof VorlageError ||
+    err instanceof WartungError
   ) {
     let status: number;
     if (err.code === 'NOT_FOUND') status = 404;
