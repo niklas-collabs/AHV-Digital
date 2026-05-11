@@ -538,6 +538,30 @@ function drawSummen(doc: PDFKit.PDFDocument, materialien: AuftragMaterial[]): vo
   y += 4;
   drawLine('Gesamtbetrag', formatEuro(summeBrutto), { bold: true });
 
+  // §35a EStG: Lohnkostenanteil separat ausweisen, falls vorhanden.
+  // Privatkunden können diesen Betrag in der Steuererklärung absetzen.
+  const lohnkostenBrutto = materialien
+    .filter((m) => m.ist_lohnkosten)
+    .reduce((sum, m) => {
+      const netto = m.menge * m.preis_netto;
+      return sum + netto * (1 + m.mwst_prozent / 100);
+    }, 0);
+  if (lohnkostenBrutto > 0) {
+    y += 6;
+    doc
+      .font(F_REGULAR)
+      .fontSize(8)
+      .fillColor(COLOR_MUTED)
+      .text(
+        `davon Lohnkosten gem. § 35a EStG (brutto): ${formatEuro(lohnkostenBrutto)}`,
+        left,
+        y,
+        { width: 200, align: 'right' },
+      );
+    y = doc.y + 2;
+    doc.fillColor(COLOR_TEXT);
+  }
+
   doc.y = y + 10;
   doc.x = PAGE_MARGIN;
 }

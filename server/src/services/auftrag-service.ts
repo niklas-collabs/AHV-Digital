@@ -10,6 +10,7 @@ import type {
   Teilleistung,
 } from '@ahv/shared';
 import { getKunde } from './kunde-service.js';
+import { recordLog } from './log-service.js';
 
 export class AuftragError extends Error {
   constructor(
@@ -21,7 +22,7 @@ export class AuftragError extends Error {
   }
 }
 
-export const MAX_FOTOS_PER_AUFTRAG = 10;
+export const MAX_FOTOS_PER_AUFTRAG = 20;
 
 // === Zod-Schemas ===
 
@@ -179,6 +180,168 @@ function buildSnapshot(kunde: Kunde): KundeSnapshot {
   };
 }
 
+/**
+ * Aggregierte Statistik über alle Aufträge — Mini-Dashboard.
+ * Liefert Counts und Netto-Summen je Zeitraum (heute / 7d / 30d / gesamt).
+ */
+export interface AuftragStats {
+  total: number;
+  draft: number;
+  abgeschickt: number;
+  byTyp: Record<AuftragTyp, number>;
+  netto: {
+    gesamt: number;
+    heute: number;
+    woche: number;
+    monat: number;
+  };
+  count: {
+    heute: number;
+    woche: number;
+    monat: number;
+  };
+}
+
+function auftragNetto(row: {
+  mitarbeiter: string;
+  materialien: string;
+  teilleistungen: string;
+}): number {
+  const ma = safeParse<Array<{ stundenpreis?: number; stunden?: number }>>(row.mitarbeiter, []);
+  const mat = safeParse<Array<{ menge?: number; preis_netto?: number }>>(row.materialien, []);
+  const tl = safeParse<
+    Array<{
+      mitarbeiter?: Array<{ stundenpreis?: number; stunden?: number }>;
+      materialien?: Array<{ menge?: number; preis_netto?: number }>;
+    }>
+  >(row.teilleistungen, []);
+  let sum = 0;
+  for (const m of ma) sum += (m.stundenpreis ?? 0) * (m.stunden ?? 0);
+  for (const m of mat) sum += (m.preis_netto ?? 0) * (m.menge ?? 0);
+  for (const t of tl) {
+    for (const m of t.mitarbeiter ?? []) sum += (m.stundenpreis ?? 0) * (m.stunden ?? 0);
+    for (const m of t.materialien ?? []) sum += (m.preis_netto ?? 0) * (m.menge ?? 0);
+  }
+  return sum;
+}
+
+export function getAuftragStats(db: Database.Database): AuftragStats {
+  const rows = db
+    .prepare(
+      'SELECT typ, status, datum, mitarbeiter, materialien, teilleistungen FROM auftrag',
+    )
+    .all() as Array<{
+    typ: AuftragTyp;
+    status: AuftragStatus;
+    datum: string;
+    mitarbeiter: string;
+    materialien: string;
+    teilleistungen: string;
+  }>;
+
+  const today = new Date().toISOString().slice(0, 10);
+  // Anfang der ISO-Woche (Montag)
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - dow);
+  const wochenStart = monday.toISOString().slice(0, 10);
+  // Anfang Monat
+  const monatStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const stats: AuftragStats = {
+    total: rows.length,
+    draft: 0,
+    abgeschickt: 0,
+    byTyp: { arbeitszettel: 0, angebot: 0, lieferschein: 0 },
+    netto: { gesamt: 0, heute: 0, woche: 0, monat: 0 },
+    count: { heute: 0, woche: 0, monat: 0 },
+  };
+
+  for (const r of rows) {
+    if (r.status === 'entwurf') stats.draft++;
+    else stats.abgeschickt++;
+    stats.byTyp[r.typ]++;
+
+    const netto = auftragNetto(r);
+    stats.netto.gesamt += netto;
+
+    if (r.datum === today) {
+      stats.count.heute++;
+      stats.netto.heute += netto;
+    }
+    if (r.datum >= wochenStart) {
+      stats.count.woche++;
+      stats.netto.woche += netto;
+    }
+    if (r.datum >= monatStart) {
+      stats.count.monat++;
+      stats.netto.monat += netto;
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * Sammelt einzigartige Material-Bezeichnungen aus allen bisherigen
+ * Aufträgen (inkl. Teilleistungen). Damit kann das Frontend eine
+ * Datalist mit Vorschlägen anzeigen — beim Tippen sieht der Nutzer,
+ * was er beim letzten Mal eingetragen hat. Sortiert nach Häufigkeit.
+ */
+export interface MaterialNameSuggestion {
+  name: string;
+  count: number;
+  /** Letzter Netto-Preis in der DB für dieses Material — als Vorschlag */
+  letzterPreis: number | null;
+  letzteEinheit: string | null;
+}
+
+export function listMaterialNamen(
+  db: Database.Database,
+  options: { limit?: number } = {},
+): MaterialNameSuggestion[] {
+  const limit = options.limit ?? 100;
+  const rows = db
+    .prepare('SELECT materialien, teilleistungen FROM auftrag')
+    .all() as Array<{ materialien: string; teilleistungen: string }>;
+
+  // name -> { count, lastPreis, lastEinheit }
+  const map = new Map<string, { count: number; letzterPreis: number | null; letzteEinheit: string | null }>();
+
+  function addEntry(name: string | undefined, preis: number | undefined, einheit: string | undefined) {
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const existing = map.get(trimmed) ?? { count: 0, letzterPreis: null, letzteEinheit: null };
+    existing.count++;
+    if (typeof preis === 'number' && Number.isFinite(preis)) existing.letzterPreis = preis;
+    if (typeof einheit === 'string' && einheit) existing.letzteEinheit = einheit;
+    map.set(trimmed, existing);
+  }
+
+  for (const row of rows) {
+    const mats = safeParse<Array<{ name?: string; preis_netto?: number; einheit?: string }>>(
+      row.materialien,
+      [],
+    );
+    for (const m of mats) addEntry(m.name, m.preis_netto, m.einheit);
+
+    const tls = safeParse<Array<{ materialien?: Array<{ name?: string; preis_netto?: number; einheit?: string }> }>>(
+      row.teilleistungen,
+      [],
+    );
+    for (const t of tls) {
+      for (const m of t.materialien ?? []) addEntry(m.name, m.preis_netto, m.einheit);
+    }
+  }
+
+  return [...map.entries()]
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
 // === Service ===
 
 export interface ListAuftraegeOptions {
@@ -266,6 +429,12 @@ export function createAuftrag(db: Database.Database, input: AuftragInput): Auftr
 
   const created = getAuftrag(db, id);
   if (!created) throw new Error('Auftrag wurde erstellt aber nicht gefunden');
+  recordLog(db, {
+    action: 'auftrag.created',
+    entity_type: 'auftrag',
+    entity_id: id,
+    message: `${created.typ}: ${created.titel || '(ohne Titel)'}`,
+  });
   return created;
 }
 
@@ -341,6 +510,12 @@ export function deleteAuftrag(db: Database.Database, id: string): void {
     throw new AuftragError('NOT_FOUND', 'Auftrag nicht gefunden');
   }
   db.prepare('DELETE FROM auftrag WHERE id = ?').run(id);
+  recordLog(db, {
+    action: 'auftrag.deleted',
+    entity_type: 'auftrag',
+    entity_id: id,
+    message: `${existing.typ}: ${existing.titel || '(ohne Titel)'}`,
+  });
 }
 
 /**
@@ -438,6 +613,16 @@ export function duplicateAuftrag(
     id: randomUUID(),
   }));
 
+  // Snapshot beim Duplizieren AUFFRISCHEN — wenn der Kunde inzwischen
+  // umgezogen ist, soll der neue Auftrag die aktuelle Adresse haben.
+  // Fallback auf den alten Snapshot, wenn der Kunde gelöscht oder die
+  // Beziehung leer ist.
+  let snapshot = source.kunde_snapshot;
+  if (source.kunde_id) {
+    const currentKunde = getKunde(db, source.kunde_id);
+    if (currentKunde) snapshot = buildSnapshot(currentKunde);
+  }
+
   db.prepare(
     `INSERT INTO auftrag (
        id, typ, status, titel, datum, beschreibung, notiz_intern,
@@ -454,7 +639,7 @@ export function duplicateAuftrag(
     source.beschreibung,
     source.notiz_intern,
     source.kunde_id,
-    JSON.stringify(source.kunde_snapshot),
+    JSON.stringify(snapshot),
     source.objekt_adresse,
     JSON.stringify(source.mitarbeiter),
     JSON.stringify(source.materialien),
@@ -467,6 +652,13 @@ export function duplicateAuftrag(
 
   const created = getAuftrag(db, id);
   if (!created) throw new Error('Auftrag wurde dupliziert aber nicht gefunden');
+  recordLog(db, {
+    action: options.typ ? 'auftrag.converted' : 'auftrag.duplicated',
+    entity_type: 'auftrag',
+    entity_id: id,
+    message: `Aus ${source.typ} → ${created.typ}: ${created.titel || '(ohne Titel)'}`,
+    metadata: { sourceId: source.id, sourceTyp: source.typ, targetTyp: created.typ },
+  });
   return created;
 }
 
@@ -489,5 +681,11 @@ export function abschickenAuftrag(db: Database.Database, id: string): Auftrag {
   ).run('abgeschickt', now, now, id);
   const updated = getAuftrag(db, id);
   if (!updated) throw new Error('Auftrag verschwunden nach Abschicken');
+  recordLog(db, {
+    action: 'auftrag.abgeschickt',
+    entity_type: 'auftrag',
+    entity_id: id,
+    message: `${updated.typ}: ${updated.titel || '(ohne Titel)'}`,
+  });
   return updated;
 }

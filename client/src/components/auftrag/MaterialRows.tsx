@@ -2,6 +2,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { AuftragMaterial } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useStableKeys } from '@/hooks/useStableKeys';
+import { useMaterialNamen } from '@/hooks/useMaterialNamen';
 
 interface MaterialRowsProps {
   rows: AuftragMaterial[];
@@ -12,7 +14,13 @@ interface MaterialRowsProps {
 const EINHEITEN = ['Stk', 'm', 'm²', 'l', 'kg', 'Std', 'Psch'];
 
 export function MaterialRows({ rows, onChange, disabled }: MaterialRowsProps) {
+  const { keys, addKey, removeKeyAt } = useStableKeys(rows.length);
+  // Vorschläge aus früheren Aufträgen — Datalist bietet sie an, ohne den
+  // freien Texteingabe zu blockieren.
+  const { data: materialNamen } = useMaterialNamen();
+
   const addRow = () => {
+    addKey();
     onChange([
       ...rows,
       {
@@ -31,6 +39,7 @@ export function MaterialRows({ rows, onChange, disabled }: MaterialRowsProps) {
   };
 
   const removeRow = (idx: number) => {
+    removeKeyAt(idx);
     onChange(rows.filter((_, i) => i !== idx));
   };
 
@@ -41,10 +50,11 @@ export function MaterialRows({ rows, onChange, disabled }: MaterialRowsProps) {
       )}
       {rows.map((row, idx) => (
         <div
-          key={idx}
+          key={keys[idx] ?? idx}
           className="grid grid-cols-2 gap-2 rounded-md border border-border p-2 sm:grid-cols-[2fr_0.8fr_0.8fr_1fr_0.8fr_auto]"
         >
           <Input
+            list="material-namen-list"
             placeholder="Bezeichnung"
             value={row.name}
             onChange={(e) => updateRow(idx, { name: e.target.value })}
@@ -110,6 +120,11 @@ export function MaterialRows({ rows, onChange, disabled }: MaterialRowsProps) {
       <datalist id="einheiten-list">
         {EINHEITEN.map((e) => (
           <option key={e} value={e} />
+        ))}
+      </datalist>
+      <datalist id="material-namen-list">
+        {(materialNamen ?? []).map((m) => (
+          <option key={m.name} value={m.name} />
         ))}
       </datalist>
       <Button

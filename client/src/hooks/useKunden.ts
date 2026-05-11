@@ -28,6 +28,14 @@ export function useKunden(query?: string) {
   });
 }
 
+export function useKunde(id: string | null) {
+  return useQuery({
+    queryKey: [KUNDEN_QUERY_KEY, 'byId', id],
+    queryFn: () => apiClient<Kunde>(`/api/kunden/${encodeURIComponent(id!)}`),
+    enabled: !!id,
+  });
+}
+
 export function useCreateKunde() {
   const qc = useQueryClient();
   return useMutation({

@@ -56,6 +56,18 @@ export default defineConfig({
             },
           },
           {
+            // Foto-Endpoints werden durch Annotation überschrieben — also
+            // StaleWhileRevalidate, damit andere Geräte nicht 7 Tage lang
+            // veraltete Bilder sehen.
+            urlPattern: ({ url }) =>
+              /^\/api\/auftraege\/[^/]+\/fotos\//.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'ahv-fotos-cache',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
+            },
+          },
+          {
             // Logo aus dem Backend (kommt häufig vor)
             urlPattern: ({ url }) => url.pathname.startsWith('/api/logo'),
             handler: 'CacheFirst',
@@ -77,8 +89,10 @@ export default defineConfig({
             },
           },
           {
-            // Bilder
-            urlPattern: ({ request }) => request.destination === 'image',
+            // Sonstige Bilder (Icons etc.) — keine API-Bilder mehr, weil die
+            // Foto-Regel oben greift; kein Risiko von veralteten Annotationen.
+            urlPattern: ({ request, url }) =>
+              request.destination === 'image' && !url.pathname.startsWith('/api/'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'ahv-images-cache',

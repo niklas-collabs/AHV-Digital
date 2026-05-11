@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BarChart3, ChevronRight, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Card,
@@ -22,6 +22,7 @@ import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
 import { GmailSection } from '@/components/settings/GmailSection';
 import { VorlagenSection } from '@/components/settings/VorlagenSection';
+import { BackupSection } from '@/components/settings/BackupSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -48,6 +49,22 @@ export function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 p-4">
+        <Card>
+          <Link
+            to="/statistik"
+            className="flex items-center gap-3 p-6 transition-colors hover:bg-accent/40"
+          >
+            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-base font-semibold">Statistik</p>
+              <p className="text-xs text-muted-foreground">
+                Übersicht über Aufträge, Umsatz und Zeiträume
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Firma</CardTitle>
@@ -139,6 +156,19 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <LexofficeSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Datensicherung</CardTitle>
+            <CardDescription>
+              Automatisches Backup täglich um 03:00 UTC. Manuell anstoßen oder
+              einzelne Backups herunterladen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BackupSection />
           </CardContent>
         </Card>
 

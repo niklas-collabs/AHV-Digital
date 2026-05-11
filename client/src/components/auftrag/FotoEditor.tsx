@@ -29,6 +29,9 @@ interface Stroke {
 interface FotoEditorProps {
   auftragId: string;
   filename: string;
+  /** Optionaler Cache-Bust-Counter — verhindert, dass nach einer
+   *  vorherigen Annotation der Browser/SW eine veraltete Version lädt. */
+  version?: number;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -40,7 +43,7 @@ interface FotoEditorProps {
  * - Undo (entfernt letzten Strich, Canvas wird neu gerendert)
  * - Speichern: JPEG-Blob via PUT — Server überschreibt das Original
  */
-export function FotoEditor({ auftragId, filename, onClose, onSaved }: FotoEditorProps) {
+export function FotoEditor({ auftragId, filename, version, onClose, onSaved }: FotoEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Bild in Original-Auflösung im Speicher — wird bei jedem Re-Render
   // wieder als Hintergrund auf den Canvas gemalt.
@@ -53,7 +56,8 @@ export function FotoEditor({ auftragId, filename, onClose, onSaved }: FotoEditor
   const [imageLoaded, setImageLoaded] = useState(false);
   const replace = useReplaceFoto();
 
-  const fotoUrl = `/api/auftraege/${encodeURIComponent(auftragId)}/fotos/${encodeURIComponent(filename)}`;
+  const baseUrl = `/api/auftraege/${encodeURIComponent(auftragId)}/fotos/${encodeURIComponent(filename)}`;
+  const fotoUrl = version ? `${baseUrl}?v=${version}` : baseUrl;
 
   // Bild laden + Canvas auf Originalmaße bringen
   useEffect(() => {
@@ -145,14 +149,9 @@ export function FotoEditor({ auftragId, filename, onClose, onSaved }: FotoEditor
     isDrawingRef.current = false;
     const stroke = currentStrokeRef.current;
     currentStrokeRef.current = null;
-    // Strich nur committen, wenn er mindestens 2 Punkte hat (sonst Click ohne Move)
-    if (stroke.points.length >= 2) {
-      setStrokes((s) => [...s, stroke]);
-    } else {
-      // Click ohne Move = kleiner Punkt: trotzdem speichern, sonst irritiert
-      // dass ein Tap im rot-Modus nichts macht.
-      setStrokes((s) => [...s, stroke]);
-    }
+    // Auch ein Tap ohne Move (= Punkt) wird gespeichert — sonst irritiert,
+    // dass ein Klick im aktuellen Farb-Modus nichts macht.
+    setStrokes((s) => [...s, stroke]);
   };
 
   const handleUndo = () => {

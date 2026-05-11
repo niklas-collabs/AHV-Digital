@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { AuftragTyp } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,12 @@ export function VorlageSaveDialog({
 }: VorlageSaveDialogProps) {
   const [name, setName] = useState(defaultName);
   const create = useCreateVorlage();
+
+  // Bei jedem Öffnen den Namen auf den aktuellen Vorschlag setzen,
+  // sonst bleibt der Wert vom letzten Mal stehen.
+  useEffect(() => {
+    if (open) setName(defaultName);
+  }, [open, defaultName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

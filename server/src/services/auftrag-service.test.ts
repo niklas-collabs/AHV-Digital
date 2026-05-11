@@ -305,6 +305,30 @@ describe('auftrag-service', () => {
       expect(arbeitszettel.urspruenglicher_auftrag_id).toBe(angebot.id);
     });
 
+    it('refrescht kunde_snapshot aus aktuellem Kunden', () => {
+      const db = makeDb();
+      const k = createKunde(db, {
+        typ: 'privat',
+        vorname: 'Max',
+        nachname: 'Mustermann',
+        ort: 'Berlin',
+      });
+      const source = createAuftrag(db, baseInput({ kunde_id: k.id }));
+      // Kunde zieht um
+      updateKunde(db, k.id, {
+        typ: 'privat',
+        vorname: 'Max',
+        nachname: 'Mustermann',
+        ort: 'Hamburg',
+      });
+      const copy = duplicateAuftrag(db, source.id);
+      // Quelle behält ALTEN Snapshot (Berlin)
+      const reloadedSource = getAuftrag(db, source.id);
+      expect(reloadedSource?.kunde_snapshot.ort).toBe('Berlin');
+      // Kopie bekommt FRISCHEN Snapshot (Hamburg)
+      expect(copy.kunde_snapshot.ort).toBe('Hamburg');
+    });
+
     it('Original behält den Verweis auch wenn Original geändert wird', () => {
       const db = makeDb();
       const source = createAuftrag(db, baseInput({ titel: 'Original' }));

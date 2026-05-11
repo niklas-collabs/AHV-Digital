@@ -9,7 +9,9 @@ import {
   deleteAuftrag,
   duplicateAuftrag,
   getAuftrag,
+  getAuftragStats,
   listAuftraege,
+  listMaterialNamen,
   removeFotoFromAuftrag,
   updateAuftrag,
 } from '../services/auftrag-service.js';
@@ -18,6 +20,7 @@ import { readLogo } from '../services/logo-service.js';
 import { sendAuftragMail } from '../services/mail-service.js';
 import {
   FotoError,
+  deleteAllFotosForAuftrag,
   deleteFotoFile,
   fotoUploadMiddleware,
   readFoto,
@@ -48,6 +51,25 @@ auftragRouter.get('/', (req, res, next) => {
   try {
     const params = listQuery.parse(req.query);
     res.json(listAuftraege(getDb(), { ...params, query: params.q }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Material-Namen-Vorschläge aus der Auftrags-Historie. Eigene Route VOR
+// dem /:id-Handler, damit "material-namen" nicht als ID interpretiert wird.
+auftragRouter.get('/material-namen', (_req, res, next) => {
+  try {
+    res.json(listMaterialNamen(getDb()));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Statistik-Aggregat fürs Dashboard
+auftragRouter.get('/stats', (_req, res, next) => {
+  try {
+    res.json(getAuftragStats(getDb()));
   } catch (err) {
     next(err);
   }
@@ -140,7 +162,10 @@ auftragRouter.get('/:id/pdf', async (req, res, next) => {
 
 auftragRouter.delete('/:id', (req, res, next) => {
   try {
-    deleteAuftrag(getDb(), req.params.id);
+    const id = req.params.id;
+    deleteAuftrag(getDb(), id);
+    // Auch das Foto-Verzeichnis aufräumen — sonst Disk-Leak.
+    deleteAllFotosForAuftrag(resolveUploadsDir(), id);
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -207,7 +232,10 @@ auftragRouter.get('/:id/fotos/:filename', (req, res, next) => {
       return;
     }
     res.setHeader('Content-Type', 'image/jpeg');
-    res.setHeader('Cache-Control', 'private, max-age=86400');
+    // Annotation überschreibt Dateien unter gleichem Pfad — wir wollen,
+    // dass der Browser bei jeder Anfrage validiert (304 falls unverändert),
+    // statt 24 h lang aus dem Cache zu liefern.
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
     res.send(buffer);
   } catch (err) {
     next(err);

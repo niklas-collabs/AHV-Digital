@@ -10,6 +10,7 @@ import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
 import { auftragRouter } from './routes/auftrag.js';
 import { authRouter } from './routes/auth.js';
+import { backupRouter } from './routes/backup.js';
 import { configRouter } from './routes/config.js';
 import { kundeRouter } from './routes/kunde.js';
 import { lexofficeRouter } from './routes/lexoffice.js';
@@ -83,6 +84,7 @@ app.use('/api/auftraege', auftragRouter);
 app.use('/api/lexoffice', lexofficeRouter);
 app.use('/api/mail', mailRouter);
 app.use('/api/vorlagen', vorlageRouter);
+app.use('/api/backups', backupRouter);
 // (1.8 ergaenzt /api/auftraege/:id/pdf)
 
 // === Static-Serve (Production) ===

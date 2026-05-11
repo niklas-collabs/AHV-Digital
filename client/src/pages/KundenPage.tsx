@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, Pencil, Plus, Search, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Kunde } from '@ahv/shared';
@@ -99,10 +100,10 @@ function KundeRow({ kunde, onEdit, onDelete }: KundeRowProps) {
   return (
     <li className="flex items-center gap-3 p-3">
       <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
+      <Link to={`/kunden/${kunde.id}`} className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{displayName(kunde)}</p>
         <p className="truncate text-xs text-muted-foreground">{addressLine(kunde) || '—'}</p>
-      </div>
+      </Link>
       <Button type="button" variant="ghost" size="icon" onClick={onEdit} aria-label="Bearbeiten">
         <Pencil className="h-4 w-4" />
       </Button>

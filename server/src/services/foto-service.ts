@@ -1,7 +1,14 @@
 import multer from 'multer';
 import sharp from 'sharp';
 import path from 'node:path';
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 
 const MAX_UPLOAD_SIZE = 25 * 1024 * 1024; // 25 MB Roh-Upload (vor Komprimierung)
@@ -154,6 +161,23 @@ export function deleteFotoFile(
   const fullPath = path.join(fotoDir(uploadsDir, auftragId), sanitizeFilename(filename));
   if (existsSync(fullPath)) {
     unlinkSync(fullPath);
+  }
+}
+
+/**
+ * Entfernt das gesamte Auftrag-Foto-Verzeichnis (rekursiv). Wird beim
+ * Auftrag-Löschen aufgerufen — verhindert verwaiste JPEGs auf Disk.
+ * Idempotent: existiert das Verzeichnis nicht, passiert nichts.
+ */
+export function deleteAllFotosForAuftrag(uploadsDir: string, auftragId: string): void {
+  // Path-Traversal kann hier nicht passieren, weil auftragId immer eine
+  // serverseitig vergebene UUID ist. Der Vorsicht halber trotzdem prüfen.
+  if (auftragId.includes('/') || auftragId.includes('\\') || auftragId.includes('..')) {
+    return;
+  }
+  const dir = fotoDir(uploadsDir, auftragId);
+  if (existsSync(dir)) {
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 

@@ -7,7 +7,7 @@ import { useDeleteFoto, useUploadFoto } from '@/hooks/useAuftragFotos';
 import { cn } from '@/lib/utils';
 import { FotoEditor } from './FotoEditor';
 
-const MAX_FOTOS = 10;
+const MAX_FOTOS = 20;
 
 interface FotoGridProps {
   auftragId: string;
@@ -168,9 +168,11 @@ export function FotoGrid({ auftragId, fotos, disabled }: FotoGridProps) {
         <FotoEditor
           auftragId={auftragId}
           filename={editingFilename}
+          version={versions[editingFilename]}
           onClose={() => setEditingFilename(null)}
           onSaved={() => {
-            // Cache-Bust: alle img-Tags neu laden
+            // Cache-Bust: alle img-Tags neu laden (auch im Editor selbst,
+            // falls er gleich nochmal geöffnet wird)
             setVersions((v) => ({ ...v, [editingFilename]: (v[editingFilename] ?? 0) + 1 }));
             setEditingFilename(null);
           }}

@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { LoginPage } from '@/pages/LoginPage';
 import { SetupPage } from '@/pages/SetupPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { KundenPage } from '@/pages/KundenPage';
+import { KundeDetailPage } from '@/pages/KundeDetailPage';
 import { AuftraegePage } from '@/pages/AuftraegePage';
 import { AuftragFormPage } from '@/pages/AuftragFormPage';
+import { StatistikPage } from '@/pages/StatistikPage';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { Toaster } from '@/components/ui/sonner';
 import { applyThemeToDocument, useThemeStore } from '@/stores/theme-store';
@@ -31,6 +34,8 @@ export function App() {
             <Route path="/" element={<Navigate to="/auftraege" replace />} />
             <Route path="/auftraege" element={<AuftraegePage />} />
             <Route path="/kunden" element={<KundenPage />} />
+            <Route path="/kunden/:id" element={<KundeDetailPage />} />
+            <Route path="/statistik" element={<StatistikPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
@@ -48,11 +53,36 @@ export function App() {
 
 function ProtectedGate() {
   const { data, isLoading, isError } = useAuthStatus();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Globaler Hotkey: Ctrl/Cmd+K öffnet die Suche (Desktop).
+  // Mobile öffnen Pages via window.dispatchEvent(new CustomEvent('ahv:open-search')).
+  useEffect(() => {
+    const keyHandler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    const openHandler = () => setSearchOpen(true);
+    window.addEventListener('keydown', keyHandler);
+    window.addEventListener('ahv:open-search', openHandler);
+    return () => {
+      window.removeEventListener('keydown', keyHandler);
+      window.removeEventListener('ahv:open-search', openHandler);
+    };
+  }, []);
+
   if (isLoading) return <FullScreenLoader />;
   if (isError || !data) return <Navigate to="/login" replace />;
   if (data.needsSetup) return <Navigate to="/setup" replace />;
   if (!data.authenticated) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
+  );
 }
 
 interface PublicGateProps {

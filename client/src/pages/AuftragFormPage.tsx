@@ -46,6 +46,7 @@ import {
 } from '@/components/auftrag/VorlageSaveDialog';
 import { AuftragAktionenDialog } from '@/components/auftrag/AuftragAktionenDialog';
 import { TeilleistungenSection } from '@/components/auftrag/TeilleistungenSection';
+import { useAutosaveDraft } from '@/hooks/useAutosaveDraft';
 
 interface FormState {
   typ: AuftragTyp;
@@ -139,10 +140,47 @@ export function AuftragFormPage() {
   const [state, setState] = useState<FormState>(EMPTY_STATE);
   const [showVorlageSaveDialog, setShowVorlageSaveDialog] = useState(false);
   const [showAktionenDialog, setShowAktionenDialog] = useState(false);
+  const [autosaveOffered, setAutosaveOffered] = useState(false);
 
   useEffect(() => {
     if (existing) setState(fromAuftrag(existing));
   }, [existing]);
+
+  // Autosave: speichert state in localStorage nach 1 s Inaktivität.
+  // Bei abgeschickten Aufträgen NICHT aktiv, weil sie read-only sind.
+  const draftId = isEdit ? id! : 'new';
+  const isAbgeschicktForDraft = existing?.status === 'abgeschickt';
+  const { lastSavedAt, clear: clearDraft, getStoredDraft } = useAutosaveDraft(
+    draftId,
+    state,
+    { enabled: !isAbgeschicktForDraft },
+  );
+
+  // Beim ersten Render: gibt es einen lokalen Entwurf? Wenn ja und er ist
+  // jünger als die Server-Version (oder es gibt keine), Übernahme anbieten.
+  useEffect(() => {
+    if (autosaveOffered) return;
+    if (isEdit && isLoading) return;
+    const stored = getStoredDraft();
+    if (!stored) {
+      setAutosaveOffered(true);
+      return;
+    }
+    // Bei existing: nur übernehmen, wenn Entwurf NACH geaendert_am gespeichert
+    if (existing && stored.savedAt <= existing.geaendert_am) {
+      clearDraft();
+      setAutosaveOffered(true);
+      return;
+    }
+    const when = new Date(stored.savedAt).toLocaleString('de-DE');
+    if (confirm(`Es gibt einen lokal gespeicherten Entwurf vom ${when}. Übernehmen?`)) {
+      setState(stored.data);
+    } else {
+      clearDraft();
+    }
+    setAutosaveOffered(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, existing, autosaveOffered]);
 
   // Beim Anlegen aus einer Vorlage: location.state übernehmen
   useEffect(() => {
@@ -208,6 +246,7 @@ export function AuftragFormPage() {
       } else {
         await create.mutateAsync(toInput(state));
       }
+      clearDraft();
       toast.success(isEdit ? 'Gespeichert' : 'Auftrag angelegt');
       navigate('/auftraege', { replace: true });
     } catch (e: unknown) {
@@ -230,6 +269,7 @@ export function AuftragFormPage() {
         saved = await create.mutateAsync(toInput(state));
       }
       const result = await abschicken.mutateAsync({ id: saved.id, options });
+      clearDraft();
       if (options.sendKunde && result._mailResult) {
         toast.success(
           `Abgeschickt — Mail an ${result._mailResult.recipients.length} Empfänger`,
@@ -249,6 +289,7 @@ export function AuftragFormPage() {
     if (!confirm(`"${existing.titel || '(ohne Titel)'}" wirklich löschen?`)) return;
     remove.mutate(existing.id, {
       onSuccess: () => {
+        clearDraft();
         toast.success('Gelöscht');
         navigate('/auftraege', { replace: true });
       },
@@ -311,6 +352,15 @@ export function AuftragFormPage() {
             übernommen
           </div>
         )}
+        {!isAbgeschickt && lastSavedAt && (
+          <div className="mx-auto max-w-3xl px-4 pb-2 text-[10px] text-muted-foreground">
+            Lokal gespeichert{' '}
+            {new Date(lastSavedAt).toLocaleTimeString('de-DE', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 p-4 pb-32">
@@ -355,6 +405,18 @@ export function AuftragFormPage() {
             <KundeSelector
               value={state.kunde_id}
               onChange={(kunde_id) => setState((s) => ({ ...s, kunde_id }))}
+              onSelectKunde={(k) =>
+                setState((s) => {
+                  // Einsatzort als Default vorschlagen, wenn das Feld noch
+                  // leer ist — der Nutzer kann es überschreiben.
+                  if (s.objekt_adresse.trim()) return s;
+                  const lines: string[] = [];
+                  if (k.strasse) lines.push(k.strasse);
+                  const ortLine = [k.plz, k.ort].filter(Boolean).join(' ');
+                  if (ortLine) lines.push(ortLine);
+                  return { ...s, objekt_adresse: lines.join('\n') };
+                })
+              }
               disabled={disabled}
             />
             <div className="space-y-1.5">
@@ -445,7 +507,7 @@ export function AuftragFormPage() {
               <CardTitle className="text-base">Fotos</CardTitle>
               <CardDescription className="text-xs">
                 Mit der Kamera aufnehmen oder aus der Galerie wählen. Bilder werden
-                serverseitig auf max. 1600 px komprimiert (JPEG). Maximal 10 Fotos.
+                serverseitig auf max. 1600 px komprimiert (JPEG). Maximal 20 Fotos.
               </CardDescription>
             </CardHeader>
             <CardContent>

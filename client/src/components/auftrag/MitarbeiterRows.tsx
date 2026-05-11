@@ -3,6 +3,7 @@ import type { AuftragMitarbeiter } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useStufen } from '@/hooks/useStufen';
+import { useStableKeys } from '@/hooks/useStableKeys';
 
 interface MitarbeiterRowsProps {
   rows: AuftragMitarbeiter[];
@@ -12,8 +13,10 @@ interface MitarbeiterRowsProps {
 
 export function MitarbeiterRows({ rows, onChange, disabled }: MitarbeiterRowsProps) {
   const { data: stufen } = useStufen();
+  const { keys, addKey, removeKeyAt } = useStableKeys(rows.length);
 
   const addRow = () => {
+    addKey();
     onChange([
       ...rows,
       {
@@ -31,6 +34,7 @@ export function MitarbeiterRows({ rows, onChange, disabled }: MitarbeiterRowsPro
   };
 
   const removeRow = (idx: number) => {
+    removeKeyAt(idx);
     onChange(rows.filter((_, i) => i !== idx));
   };
 
@@ -55,7 +59,7 @@ export function MitarbeiterRows({ rows, onChange, disabled }: MitarbeiterRowsPro
       )}
       {rows.map((row, idx) => (
         <div
-          key={idx}
+          key={keys[idx] ?? idx}
           className="grid grid-cols-1 gap-2 rounded-md border border-border p-2 sm:grid-cols-[2fr_1.5fr_0.8fr_0.8fr_auto]"
         >
           <Input

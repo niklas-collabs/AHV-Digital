@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   ClipboardList,
+  Copy,
   FileDown,
   FileText,
   Package,
@@ -15,9 +16,15 @@ import type { Auftrag, AuftragStatus, AuftragTyp } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError } from '@/lib/api';
-import { useAuftraege, useDeleteAuftrag } from '@/hooks/useAuftraege';
+import {
+  useAuftraege,
+  useDeleteAuftrag,
+  useDuplicateAuftrag,
+} from '@/hooks/useAuftraege';
 import { VorlageListDialog } from '@/components/auftrag/VorlageListDialog';
 import { cn } from '@/lib/utils';
+
+type DateFilter = 'alle' | 'heute' | 'woche' | 'monat';
 
 const TYP_ICON: Record<AuftragTyp, typeof FileText> = {
   arbeitszettel: ClipboardList,
@@ -37,6 +44,7 @@ export function AuftraegePage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [showVorlageList, setShowVorlageList] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('alle');
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
@@ -45,14 +53,25 @@ export function AuftraegePage() {
 
   const { data, isLoading } = useAuftraege({ status: tab, query: debounced || undefined });
   const remove = useDeleteAuftrag();
+  const duplicate = useDuplicateAuftrag();
 
-  const auftraege = data ?? [];
+  const auftraege = useMemo(() => filterByDate(data ?? [], dateFilter), [data, dateFilter]);
 
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
           <h1 className="flex-1 text-lg font-semibold">Aufträge</h1>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => window.dispatchEvent(new CustomEvent('ahv:open-search'))}
+            aria-label="Globale Suche"
+            title="Globale Suche (Strg+K)"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -87,6 +106,23 @@ export function AuftraegePage() {
               className="pl-10"
             />
           </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(['alle', 'heute', 'woche', 'monat'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setDateFilter(f)}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                  dateFilter === f
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-background text-muted-foreground hover:border-primary/50',
+                )}
+              >
+                {DATE_LABEL[f]}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -105,6 +141,19 @@ export function AuftraegePage() {
               <AuftragRow
                 key={a.id}
                 auftrag={a}
+                onDuplicate={() => {
+                  duplicate.mutate(
+                    { id: a.id },
+                    {
+                      onSuccess: (created) => {
+                        toast.success('Dupliziert');
+                        navigate(`/auftraege/${created.id}/edit`);
+                      },
+                      onError: (err) =>
+                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                    },
+                  );
+                }}
                 onDelete={() => {
                   if (confirm(`"${a.titel || '(ohne Titel)'}" wirklich löschen?`)) {
                     remove.mutate(a.id, {
@@ -158,10 +207,11 @@ function TabBtn({ active, onClick, label }: TabBtnProps) {
 
 interface AuftragRowProps {
   auftrag: Auftrag;
+  onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function AuftragRow({ auftrag, onDelete }: AuftragRowProps) {
+function AuftragRow({ auftrag, onDuplicate, onDelete }: AuftragRowProps) {
   const Icon = TYP_ICON[auftrag.typ];
   const kundeName = formatKunde(auftrag);
 
@@ -183,6 +233,16 @@ function AuftragRow({ auftrag, onDelete }: AuftragRowProps) {
         type="button"
         variant="ghost"
         size="icon"
+        onClick={onDuplicate}
+        aria-label="Duplizieren"
+        title="Duplizieren"
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
         onClick={() => window.open(`/api/auftraege/${auftrag.id}/pdf`, '_blank', 'noopener')}
         aria-label="PDF öffnen"
         title="PDF öffnen"
@@ -200,4 +260,41 @@ function formatKunde(a: Auftrag): string {
   const s = a.kunde_snapshot;
   if (s.typ === 'firma') return s.firmenname ?? '';
   return [s.vorname, s.nachname].filter(Boolean).join(' ');
+}
+
+const DATE_LABEL: Record<DateFilter, string> = {
+  alle: 'Alle',
+  heute: 'Heute',
+  woche: 'Diese Woche',
+  monat: 'Dieser Monat',
+};
+
+function filterByDate(list: Auftrag[], filter: DateFilter): Auftrag[] {
+  if (filter === 'alle') return list;
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+
+  if (filter === 'heute') {
+    return list.filter((a) => a.datum === today);
+  }
+
+  if (filter === 'woche') {
+    // ISO-Woche: Montag = 1, Sonntag = 7. Wir berechnen Montag-00:00 bis
+    // Sonntag-23:59 in lokaler Zeit.
+    const dow = (now.getDay() + 6) % 7; // 0 = Montag
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - dow);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fromIso = monday.toISOString().slice(0, 10);
+    const toIso = sunday.toISOString().slice(0, 10);
+    return list.filter((a) => a.datum >= fromIso && a.datum <= toIso);
+  }
+
+  // 'monat': Anfang bis Ende des aktuellen Kalendermonats
+  const fromIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const toIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  return list.filter((a) => a.datum >= fromIso && a.datum <= toIso);
 }

@@ -10,10 +10,13 @@ import { KundeFormDialog } from '@/components/kunden/KundeFormDialog';
 interface KundeSelectorProps {
   value: string | null;
   onChange: (kunde_id: string | null) => void;
+  /** Optionaler Callback, der mit dem ausgewählten Kunden-Objekt gerufen wird —
+   *  damit das Parent z.B. Einsatzort als Default setzen kann. */
+  onSelectKunde?: (kunde: Kunde) => void;
   disabled?: boolean;
 }
 
-export function KundeSelector({ value, onChange, disabled }: KundeSelectorProps) {
+export function KundeSelector({ value, onChange, onSelectKunde, disabled }: KundeSelectorProps) {
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
   const { data: alleKunden } = useKunden();
@@ -71,6 +74,7 @@ export function KundeSelector({ value, onChange, disabled }: KundeSelectorProps)
                 disabled={disabled}
                 onClick={() => {
                   onChange(k.id);
+                  onSelectKunde?.(k);
                   setSearch('');
                 }}
                 className="flex w-full items-center gap-2 border-b border-border p-3 text-left last:border-0 hover:bg-muted/50 disabled:opacity-50"
