@@ -36,6 +36,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Push-Handler (Notification-Empfang + Klick-Routing) wird in den
+        // generierten Service Worker importiert. Datei liegt in public/.
+        importScripts: ['/push-handler.js'],
         // Auth-relevante Endpoints nicht cachen — sonst sieht man veraltete
         // Status-Daten nach Login/Logout.
         navigateFallback: '/index.html',

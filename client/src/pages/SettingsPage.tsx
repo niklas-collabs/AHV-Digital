@@ -24,6 +24,7 @@ import { GmailSection } from '@/components/settings/GmailSection';
 import { VorlagenSection } from '@/components/settings/VorlagenSection';
 import { ChecklistenSection } from '@/components/settings/ChecklistenSection';
 import { BackupSection } from '@/components/settings/BackupSection';
+import { PushSection } from '@/components/settings/PushSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
@@ -186,6 +187,20 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <LexofficeSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Push-Notifications</CardTitle>
+            <CardDescription>
+              Tägliche Erinnerung für fällige und überfällige Wartungen.
+              Aktivierung pro Gerät — auf iOS muss die App vorher zum
+              Home-Bildschirm hinzugefügt werden.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushSection />
           </CardContent>
         </Card>
 

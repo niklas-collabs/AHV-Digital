@@ -8,6 +8,8 @@ import type { HealthResponse } from '@ahv/shared';
 import { getDb, resolveDbPath } from './db/client.js';
 import { runMigrations } from './db/migrations/runner.js';
 import { startBackupCron } from './services/backup-service.js';
+import { checkAndSendWartungsReminder, initWebPush } from './services/push-service.js';
+import cron from 'node-cron';
 import { anlageRouter } from './routes/anlage.js';
 import { auftragRouter } from './routes/auftrag.js';
 import { authRouter } from './routes/auth.js';
@@ -21,6 +23,7 @@ import { logoRouter } from './routes/logo.js';
 import { mailRouter } from './routes/mail.js';
 import { pauschaleRouter } from './routes/pauschale.js';
 import { plzRouter } from './routes/plz.js';
+import { pushRouter } from './routes/push.js';
 import { stufeRouter } from './routes/stufe.js';
 import { vorlageRouter } from './routes/vorlage.js';
 import { wartungRouter } from './routes/wartung.js';
@@ -48,6 +51,34 @@ const dbPath = resolveDbPath();
 const backupDir = path.join(path.dirname(dbPath), 'backups');
 startBackupCron(dbPath, backupDir);
 logger.info('backup.scheduled', { schedule: '0 3 * * * UTC', dir: backupDir });
+
+// === Push-Notifications: VAPID-Keys initialisieren ===
+// Subject = mailto-Adresse oder URL für VAPID; in Production die echte
+// App-URL, sonst Fallback. Wird bei jedem Push als "from" mitgeschickt.
+const pushSubject = process.env.PUSH_SUBJECT ?? 'mailto:noreply@example.com';
+initWebPush(db, pushSubject);
+logger.info('push.initialized', { subject: pushSubject });
+
+// === Wartungs-Reminder-Cron ===
+// Täglich 07:00 lokale Zeit (Europe/Berlin), prüft fällige Wartungspläne
+// und schickt Push-Notifications.
+cron.schedule(
+  '0 7 * * *',
+  async () => {
+    try {
+      const result = await checkAndSendWartungsReminder(db);
+      if (result.totalSent > 0) {
+        logger.info('push.wartung_sent', result);
+      }
+    } catch (err) {
+      logger.error('push.wartung_failed', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  },
+  { timezone: 'Europe/Berlin' },
+);
+logger.info('push.scheduled', { schedule: '0 7 * * * Europe/Berlin' });
 
 // === Express ===
 const app = express();
@@ -94,6 +125,7 @@ app.use('/api/wartung', wartungRouter);
 app.use('/api/anlagen', anlageRouter);
 app.use('/api/log', logRouter);
 app.use('/api/plz', plzRouter);
+app.use('/api/push', pushRouter);
 app.use('/api/backups', backupRouter);
 // (1.8 ergaenzt /api/auftraege/:id/pdf)
 
