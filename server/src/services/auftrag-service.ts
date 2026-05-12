@@ -99,6 +99,7 @@ interface AuftragRow {
   checkliste: string | null;
   teilleistungen: string;
   urspruenglicher_auftrag_id: string | null;
+  lexoffice_invoice_id: string | null;
   erstellt_am: string;
   geaendert_am: string;
   abgeschickt_am: string | null;
@@ -132,6 +133,7 @@ function rowToAuftrag(row: AuftragRow): Auftrag {
     checkliste: row.checkliste === null ? null : safeParse(row.checkliste, []),
     teilleistungen: safeParse(row.teilleistungen, []),
     urspruenglicher_auftrag_id: row.urspruenglicher_auftrag_id,
+    lexoffice_invoice_id: row.lexoffice_invoice_id,
     erstellt_am: row.erstellt_am,
     geaendert_am: row.geaendert_am,
     abgeschickt_am: row.abgeschickt_am,

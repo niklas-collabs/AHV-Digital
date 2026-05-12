@@ -76,6 +76,9 @@ export interface Auftrag {
   /** Verweis auf den Auftrag, aus dem dieser kopiert/konvertiert wurde
    *  (Pipeline 2.8). Null wenn neu angelegt. */
   urspruenglicher_auftrag_id: string | null;
+  /** Wenn der Auftrag in Lexoffice als Rechnung gepusht wurde: die
+   *  Invoice-ID dort. Erlaubt Resync + Erkennung „schon synchronisiert". */
+  lexoffice_invoice_id: string | null;
   erstellt_am: string; // ISO datetime
   geaendert_am: string;
   abgeschickt_am: string | null;
@@ -226,6 +229,8 @@ export type ConfigKey =
   | 'gmail'
   | 'lexoffice_api_key'
   | 'lexoffice_last_sync'
+  | 'lexoffice_footer_template'
+  | 'lexoffice_lohn_mwst'
   | 'logo'
   | 'theme_default'
   | 'language_default'
@@ -237,6 +242,13 @@ export interface ConfigValueByKey {
   gmail: GmailConfig;
   lexoffice_api_key: string;
   lexoffice_last_sync: string; // ISO datetime
+  /** Template für die Nachbemerkung mit Platzhaltern {lohnkosten_brutto}
+   *  und {lohnkosten_ust}. Beispiel: "Im Bruttobetrag sind
+   *  {lohnkosten_brutto} Lohnkosten enthalten. Die darin enthaltene
+   *  Umsatzsteuer beträgt {lohnkosten_ust}." */
+  lexoffice_footer_template: string;
+  /** MwSt-Satz auf Arbeitsstunden (Standard 19). */
+  lexoffice_lohn_mwst: number;
   logo: LogoConfig;
   theme_default: ThemeMode;
   language_default: Language;

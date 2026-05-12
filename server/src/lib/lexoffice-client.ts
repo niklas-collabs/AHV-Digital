@@ -108,7 +108,7 @@ interface LexofficeRequestOptions {
 
 async function request<T>(
   apiKey: string,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PUT',
   path: string,
   body: unknown,
   options: LexofficeRequestOptions = {},
@@ -235,4 +235,119 @@ export const lexofficeClient = {
     );
     return { contactsTotal: result.totalElements };
   },
+
+  /** Legt eine Rechnung an. Bei finalize=false bleibt sie als Entwurf
+   *  (= ohne Rechnungsnummer) und kann in Lexoffice editiert werden. */
+  async createInvoice(
+    apiKey: string,
+    input: LexofficeInvoiceInput,
+    options: LexofficeRequestOptions & { finalize?: boolean } = {},
+  ): Promise<LexofficeCreateResponse> {
+    const finalize = options.finalize ?? false;
+    return request<LexofficeCreateResponse>(
+      apiKey,
+      'POST',
+      `/invoices?finalize=${finalize}`,
+      input,
+      options,
+    );
+  },
+
+  async getInvoice(
+    apiKey: string,
+    invoiceId: string,
+    options: LexofficeRequestOptions = {},
+  ): Promise<LexofficeInvoice> {
+    return request<LexofficeInvoice>(
+      apiKey,
+      'GET',
+      `/invoices/${encodeURIComponent(invoiceId)}`,
+      undefined,
+      options,
+    );
+  },
+
+  /** Update geht laut Doku via PUT mit der vollständigen Invoice (inkl.
+   *  version-Feld). Wird genutzt, um den Remark-Text mit neuen Lohnkosten
+   *  zu aktualisieren — nur möglich solange die Rechnung noch Draft ist. */
+  async updateInvoice(
+    apiKey: string,
+    invoiceId: string,
+    input: LexofficeInvoiceInput & { version: number },
+    options: LexofficeRequestOptions = {},
+  ): Promise<LexofficeCreateResponse> {
+    return request<LexofficeCreateResponse>(
+      apiKey,
+      'PUT',
+      `/invoices/${encodeURIComponent(invoiceId)}`,
+      input,
+      options,
+    );
+  },
 };
+
+// ============================================================================
+// Invoice Types
+// ============================================================================
+
+export interface LexofficeLineItem {
+  type: 'custom' | 'text';
+  name: string;
+  description?: string;
+  quantity?: number;
+  unitName?: string;
+  unitPrice?: {
+    currency: 'EUR';
+    netAmount: number;
+    taxRatePercentage: number;
+  };
+  discountPercentage?: number;
+}
+
+export interface LexofficeInvoiceInput {
+  /** ISO datetime — Lexoffice akzeptiert auch reines Datum */
+  voucherDate: string;
+  address: {
+    contactId?: string;
+    name?: string;
+    street?: string;
+    zip?: string;
+    city?: string;
+    countryCode?: string;
+  };
+  lineItems: LexofficeLineItem[];
+  totalPrice: { currency: 'EUR' };
+  taxConditions: { taxType: 'net' | 'gross' | 'vatfree' };
+  paymentConditions?: {
+    paymentTermLabel?: string;
+    paymentTermDuration?: number;
+  };
+  shippingConditions: {
+    shippingDate?: string;
+    shippingType: 'service' | 'serviceperiod' | 'delivery' | 'deliveryperiod' | 'none';
+    shippingEndDate?: string;
+  };
+  /** Notiz / Fußnote — hier kommt der Lohnkosten-Hinweis rein */
+  remark?: string;
+  introduction?: string;
+  title?: string;
+}
+
+export interface LexofficeInvoice extends LexofficeInvoiceInput {
+  id: string;
+  organizationId: string;
+  createdDate: string;
+  updatedDate: string;
+  version: number;
+  language: string;
+  voucherStatus: 'draft' | 'open' | 'paid' | 'paidoff' | 'voided' | 'overdue' | 'accepted' | 'rejected';
+  voucherNumber?: string;
+}
+
+export interface LexofficeCreateResponse {
+  id: string;
+  resourceUri: string;
+  createdDate: string;
+  updatedDate: string;
+  version: number;
+}

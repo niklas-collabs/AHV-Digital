@@ -20,6 +20,7 @@ import { PinChangeForm } from '@/components/settings/PinChangeForm';
 import { StufenSection } from '@/components/settings/StufenSection';
 import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
+import { LexofficeRechnungSection } from '@/components/settings/LexofficeRechnungSection';
 import { GmailSection } from '@/components/settings/GmailSection';
 import { VorlagenSection } from '@/components/settings/VorlagenSection';
 import { ChecklistenSection } from '@/components/settings/ChecklistenSection';
@@ -187,6 +188,19 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <LexofficeSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Lexoffice-Rechnung</CardTitle>
+            <CardDescription>
+              Einstellungen für den „Als Rechnung in Lexoffice anlegen"-Workflow.
+              Lohnkosten-Hinweis und MwSt-Satz auf Arbeit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LexofficeRechnungSection />
           </CardContent>
         </Card>
 

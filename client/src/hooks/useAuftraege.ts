@@ -148,13 +148,20 @@ export function useDuplicateAuftrag() {
 export interface AbschickenOptions {
   sendKunde?: boolean;
   sendFotos?: boolean;
+  pushToLexoffice?: boolean;
+}
+
+export interface AbschickenResult extends Auftrag {
+  _mailResult?: { recipients: string[]; fotosAttached: number };
+  _lexofficeResult?: { invoiceId: string };
+  _lexofficeWarning?: string;
 }
 
 export function useAbschickenAuftrag() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, options }: { id: string; options?: AbschickenOptions }) =>
-      apiClient<Auftrag & { _mailResult?: { recipients: string[]; fotosAttached: number } }>(
+      apiClient<AbschickenResult>(
         `/api/auftraege/${encodeURIComponent(id)}/abschicken`,
         {
           method: 'POST',
@@ -165,5 +172,30 @@ export function useAbschickenAuftrag() {
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY, id] });
     },
+  });
+}
+
+export function usePushAuftragToLexoffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient<{ invoiceId: string; created: boolean }>(
+        `/api/auftraege/${encodeURIComponent(id)}/lexoffice-push`,
+        { method: 'POST', body: {} },
+      ),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY, id] });
+    },
+  });
+}
+
+export function useResyncLexofficeFooter() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient<{ ok: true }>(
+        `/api/auftraege/${encodeURIComponent(id)}/lexoffice-resync`,
+        { method: 'POST', body: {} },
+      ),
   });
 }

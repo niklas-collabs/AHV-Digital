@@ -19,6 +19,10 @@ import { getConfig } from '../services/config-service.js';
 import { readLogo } from '../services/logo-service.js';
 import { sendAuftragMail } from '../services/mail-service.js';
 import {
+  pushAuftragToLexoffice,
+  resyncLexofficeFooter,
+} from '../services/lexoffice-service.js';
+import {
   FotoError,
   deleteAllFotosForAuftrag,
   deleteFotoFile,
@@ -42,6 +46,7 @@ const abschickenBody = z
   .object({
     sendKunde: z.boolean().optional(),
     sendFotos: z.boolean().optional(),
+    pushToLexoffice: z.boolean().optional(),
   })
   .optional();
 
@@ -129,7 +134,51 @@ auftragRouter.post('/:id/abschicken', async (req, res, next) => {
     }
 
     const updated = abschickenAuftrag(db, id);
-    res.json({ ...updated, ...(mailResult ? { _mailResult: mailResult } : {}) });
+
+    // Optional: parallel als Rechnungs-Entwurf in Lexoffice anlegen
+    let lexofficeResult: { invoiceId: string } | null = null;
+    if (body.pushToLexoffice) {
+      try {
+        const r = await pushAuftragToLexoffice(db, id);
+        lexofficeResult = { invoiceId: r.invoiceId };
+      } catch (err) {
+        // Mail-Versand war erfolgreich — wir geben das Sub-Failure als
+        // Warning zurück statt den ganzen Abschicken-Flow umzuwerfen.
+        const message = err instanceof Error ? err.message : 'Lexoffice-Push fehlgeschlagen';
+        res.json({
+          ...updated,
+          ...(mailResult ? { _mailResult: mailResult } : {}),
+          _lexofficeWarning: message,
+        });
+        return;
+      }
+    }
+
+    res.json({
+      ...updated,
+      ...(mailResult ? { _mailResult: mailResult } : {}),
+      ...(lexofficeResult ? { _lexofficeResult: lexofficeResult } : {}),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Nachträglich zu Lexoffice pushen (z.B. wenn beim Abschicken nicht gewählt)
+auftragRouter.post('/:id/lexoffice-push', async (req, res, next) => {
+  try {
+    const result = await pushAuftragToLexoffice(getDb(), req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Footer-Text (Lohnkosten) in einer schon gepushten Rechnung neu rechnen
+auftragRouter.post('/:id/lexoffice-resync', async (req, res, next) => {
+  try {
+    const result = await resyncLexofficeFooter(getDb(), req.params.id);
+    res.json(result);
   } catch (err) {
     next(err);
   }

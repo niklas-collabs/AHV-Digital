@@ -240,7 +240,14 @@ function AuftragRow({ auftrag, onDuplicate, onDelete }: AuftragRowProps) {
         </div>
       ) : (
         <Link to={`/auftraege/${auftrag.id}/edit`} className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{auftrag.titel || '(ohne Titel)'}</p>
+          <p className="truncate text-sm font-medium">
+            {auftrag.titel || '(ohne Titel)'}
+            {auftrag.lexoffice_invoice_id && (
+              <span className="ml-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                Lexoffice
+              </span>
+            )}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
             {auftrag.datum} · {kundeName || 'Kein Kunde'}
           </p>

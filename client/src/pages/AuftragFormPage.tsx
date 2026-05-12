@@ -27,9 +27,12 @@ import {
   useAuftrag,
   useCreateAuftrag,
   useDeleteAuftrag,
+  usePushAuftragToLexoffice,
+  useResyncLexofficeFooter,
   useUpdateAuftrag,
   type AuftragInput,
 } from '@/hooks/useAuftraege';
+import { useLexofficeStatus } from '@/hooks/useLexoffice';
 import { AuftragTypSelector } from '@/components/auftrag/AuftragTypSelector';
 import { KundeSelector } from '@/components/auftrag/KundeSelector';
 import { MitarbeiterRows } from '@/components/auftrag/MitarbeiterRows';
@@ -142,6 +145,9 @@ export function AuftragFormPage() {
   const update = useUpdateAuftrag();
   const remove = useDeleteAuftrag();
   const abschicken = useAbschickenAuftrag();
+  const pushLexoffice = usePushAuftragToLexoffice();
+  const resyncLexoffice = useResyncLexofficeFooter();
+  const { data: lexofficeStatus } = useLexofficeStatus();
 
   const [state, setState] = useState<FormState>(EMPTY_STATE);
   const [showVorlageSaveDialog, setShowVorlageSaveDialog] = useState(false);
@@ -276,13 +282,23 @@ export function AuftragFormPage() {
       }
       const result = await abschicken.mutateAsync({ id: saved.id, options });
       clearDraft();
+
+      // Erfolgs-Meldung zusammensetzen: Mail-Hinweis + Lexoffice-Hinweis
+      const parts: string[] = [];
       if (options.sendKunde && result._mailResult) {
-        toast.success(
-          `Abgeschickt — Mail an ${result._mailResult.recipients.length} Empfänger`,
-        );
-      } else {
-        toast.success('Abgeschickt');
+        parts.push(`Mail an ${result._mailResult.recipients.length} Empfänger`);
       }
+      if (result._lexofficeResult) {
+        parts.push('als Rechnungs-Entwurf in Lexoffice angelegt');
+      }
+      toast.success(parts.length > 0 ? `Abgeschickt — ${parts.join(', ')}` : 'Abgeschickt');
+
+      if (result._lexofficeWarning) {
+        toast.warning('Lexoffice-Push fehlgeschlagen', {
+          description: result._lexofficeWarning,
+        });
+      }
+
       setShowAbschickenDialog(false);
       navigate('/auftraege', { replace: true });
     } catch (e: unknown) {
@@ -356,6 +372,46 @@ export function AuftragFormPage() {
               vorherigem Auftrag
             </Link>{' '}
             übernommen
+          </div>
+        )}
+        {existing && (lexofficeStatus?.apiKeySet ?? false) && (
+          <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 pb-2 text-xs">
+            {existing.lexoffice_invoice_id ? (
+              <>
+                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+                  In Lexoffice
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resyncLexoffice.mutate(existing.id, {
+                      onSuccess: () => toast.success('Lohnkosten-Footer aktualisiert'),
+                      onError: (err) =>
+                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                    });
+                  }}
+                  disabled={resyncLexoffice.isPending}
+                  className="text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  {resyncLexoffice.isPending ? 'Synchronisiere …' : 'Footer neu rechnen'}
+                </button>
+              </>
+            ) : isAbgeschickt ? (
+              <button
+                type="button"
+                onClick={() => {
+                  pushLexoffice.mutate(existing.id, {
+                    onSuccess: () => toast.success('Als Rechnungs-Entwurf in Lexoffice angelegt'),
+                    onError: (err) =>
+                      toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                  });
+                }}
+                disabled={pushLexoffice.isPending}
+                className="rounded-full border border-border bg-background px-3 py-1 hover:border-primary/50 disabled:opacity-50"
+              >
+                {pushLexoffice.isPending ? 'Wird gesendet …' : 'Jetzt zu Lexoffice senden'}
+              </button>
+            ) : null}
           </div>
         )}
         {!isAbgeschickt && lastSavedAt && (

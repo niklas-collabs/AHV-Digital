@@ -10,10 +10,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMailStatus } from '@/hooks/useGmail';
+import { useLexofficeStatus } from '@/hooks/useLexoffice';
 
 export interface AbschickenOptions {
   sendKunde: boolean;
   sendFotos: boolean;
+  pushToLexoffice: boolean;
 }
 
 interface AbschickenDialogProps {
@@ -36,19 +38,23 @@ export function AbschickenDialog({
   isPending,
 }: AbschickenDialogProps) {
   const { data: status } = useMailStatus();
+  const { data: lexoffice } = useLexofficeStatus();
 
   const mailReady = (status?.gmailSet ?? false) && (status?.firmaEmailSet ?? false);
   const canSendKunde = mailReady && !!kundeEmail;
+  const lexofficeReady = lexoffice?.apiKeySet ?? false;
 
   const [sendKunde, setSendKunde] = useState(canSendKunde);
   const [sendFotos, setSendFotos] = useState(false);
+  const [pushToLexoffice, setPushToLexoffice] = useState(lexofficeReady);
 
   useEffect(() => {
     if (open) {
       setSendKunde(canSendKunde);
       setSendFotos(false);
+      setPushToLexoffice(lexofficeReady);
     }
-  }, [open, canSendKunde]);
+  }, [open, canSendKunde, lexofficeReady]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -105,6 +111,24 @@ export function AbschickenDialog({
               </span>
             </label>
           )}
+
+          {lexofficeReady && (
+            <label className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={pushToLexoffice}
+                onChange={(e) => setPushToLexoffice(e.target.checked)}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                Als Rechnungs-Entwurf in Lexoffice anlegen
+                <span className="block text-xs text-muted-foreground">
+                  Positionen werden übernommen, der Lohnkosten-Hinweis wird
+                  automatisch gerechnet. Finale Prüfung in Lexoffice.
+                </span>
+              </span>
+            </label>
+          )}
         </div>
 
         <DialogFooter>
@@ -113,7 +137,7 @@ export function AbschickenDialog({
           </Button>
           <Button
             type="button"
-            onClick={() => onConfirm({ sendKunde, sendFotos })}
+            onClick={() => onConfirm({ sendKunde, sendFotos, pushToLexoffice })}
             disabled={isPending}
           >
             <Send className="h-4 w-4" />
