@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
+  CloudOff,
   ClipboardList,
   Copy,
   FileDown,
@@ -11,6 +12,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
+import { isTempId } from '@/lib/offline-store';
 import { toast } from 'sonner';
 import type { Auftrag, AuftragStatus, AuftragTyp } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -214,6 +216,7 @@ interface AuftragRowProps {
 function AuftragRow({ auftrag, onDuplicate, onDelete }: AuftragRowProps) {
   const Icon = TYP_ICON[auftrag.typ];
   const kundeName = formatKunde(auftrag);
+  const pending = isTempId(auftrag.id);
 
   return (
     <li className="flex items-center gap-3 p-3">
@@ -223,32 +226,50 @@ function AuftragRow({ auftrag, onDuplicate, onDelete }: AuftragRowProps) {
           {TYP_LABEL[auftrag.typ]}
         </span>
       </div>
-      <Link to={`/auftraege/${auftrag.id}/edit`} className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{auftrag.titel || '(ohne Titel)'}</p>
-        <p className="truncate text-xs text-muted-foreground">
-          {auftrag.datum} · {kundeName || 'Kein Kunde'}
-        </p>
-      </Link>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onDuplicate}
-        aria-label="Duplizieren"
-        title="Duplizieren"
-      >
-        <Copy className="h-4 w-4" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={() => window.open(`/api/auftraege/${auftrag.id}/pdf`, '_blank', 'noopener')}
-        aria-label="PDF öffnen"
-        title="PDF öffnen"
-      >
-        <FileDown className="h-4 w-4" />
-      </Button>
+      {pending ? (
+        // Pending-Aufträge sind nicht editierbar (Temp-ID kennt Server nicht).
+        // Nach Sync verschwindet der Eintrag aus der Pending-Liste.
+        <div className="min-w-0 flex-1 opacity-70">
+          <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+            <CloudOff className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            {auftrag.titel || '(ohne Titel)'}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {auftrag.datum} · wird synchronisiert
+          </p>
+        </div>
+      ) : (
+        <Link to={`/auftraege/${auftrag.id}/edit`} className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{auftrag.titel || '(ohne Titel)'}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {auftrag.datum} · {kundeName || 'Kein Kunde'}
+          </p>
+        </Link>
+      )}
+      {!pending && (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onDuplicate}
+            aria-label="Duplizieren"
+            title="Duplizieren"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => window.open(`/api/auftraege/${auftrag.id}/pdf`, '_blank', 'noopener')}
+            aria-label="PDF öffnen"
+            title="PDF öffnen"
+          >
+            <FileDown className="h-4 w-4" />
+          </Button>
+        </>
+      )}
       <Button type="button" variant="ghost" size="icon" onClick={onDelete} aria-label="Löschen">
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>

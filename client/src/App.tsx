@@ -15,7 +15,9 @@ import { AnlageDetailPage } from '@/pages/AnlageDetailPage';
 import { ProtokollPage } from '@/pages/ProtokollPage';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { Toaster } from '@/components/ui/sonner';
 import { applyThemeToDocument, useThemeStore } from '@/stores/theme-store';
 
@@ -63,6 +65,8 @@ export function App() {
 function ProtectedGate() {
   const { data, isLoading, isError } = useAuthStatus();
   const [searchOpen, setSearchOpen] = useState(false);
+  // Offline-Queue beim Mount durchstarten und bei online-Events abarbeiten
+  useOfflineSync();
 
   // Globaler Hotkey: Ctrl/Cmd+K öffnet die Suche (Desktop).
   // Mobile öffnen Pages via window.dispatchEvent(new CustomEvent('ahv:open-search')).
@@ -88,6 +92,7 @@ function ProtectedGate() {
   if (!data.authenticated) return <Navigate to="/login" replace />;
   return (
     <>
+      <OfflineIndicator />
       <Outlet />
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>

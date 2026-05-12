@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Auftrag, AuftragStatus, Teilleistung } from '@ahv/shared';
 import { apiClient } from '@/lib/api';
+import {
+  createAuftragOnlineOrQueue,
+  deleteAuftragOnlineOrQueue,
+  updateAuftragOnlineOrQueue,
+} from '@/lib/offline-mutation';
+import { getPendingEntities } from '@/lib/offline-store';
+import { QUEUE_LENGTH_KEY } from './useQueueLength';
 
 export const AUFTRAEGE_QUERY_KEY = 'auftraege';
 
@@ -38,7 +45,38 @@ function buildQuery(filter: AuftraegeFilter): string {
 export function useAuftraege(filter: AuftraegeFilter = {}) {
   return useQuery({
     queryKey: [AUFTRAEGE_QUERY_KEY, filter],
-    queryFn: () => apiClient<Auftrag[]>(`/api/auftraege${buildQuery(filter)}`),
+    queryFn: async () => {
+      // 1. Server-Liste — kann offline aus dem SW-Cache kommen
+      let serverList: Auftrag[] = [];
+      try {
+        serverList = await apiClient<Auftrag[]>(`/api/auftraege${buildQuery(filter)}`);
+      } catch {
+        // offline: leeres Server-Array, dann zeigen wir wenigstens
+        // die pending-Aufträge unten
+      }
+
+      // 2. Pending (offline-erzeugte) Aufträge dazu mergen, wenn sie zum
+      //    Filter passen. Pending-Aufträge sind immer entwurf.
+      if (!filter.status || filter.status === 'entwurf') {
+        const pending = await getPendingEntities('auftrag');
+        const pendingAuftraege = pending
+          .map((p) => p.data as Auftrag)
+          .filter((a) => {
+            if (filter.kunde_id && a.kunde_id !== filter.kunde_id) return false;
+            if (filter.query) {
+              const q = filter.query.toLowerCase();
+              return (
+                a.titel.toLowerCase().includes(q) ||
+                a.beschreibung.toLowerCase().includes(q)
+              );
+            }
+            return true;
+          });
+        // Pending zuerst (frisch erstellt)
+        return [...pendingAuftraege, ...serverList];
+      }
+      return serverList;
+    },
     placeholderData: (prev) => prev,
   });
 }
@@ -46,7 +84,15 @@ export function useAuftraege(filter: AuftraegeFilter = {}) {
 export function useAuftrag(id: string | null) {
   return useQuery({
     queryKey: [AUFTRAEGE_QUERY_KEY, id],
-    queryFn: () => apiClient<Auftrag>(`/api/auftraege/${encodeURIComponent(id!)}`),
+    queryFn: async () => {
+      if (id && id.startsWith('tmp:')) {
+        const pending = await getPendingEntities('auftrag');
+        const match = pending.find((p) => p.id === id);
+        if (match) return match.data as Auftrag;
+        throw new Error('Pending-Auftrag nicht mehr in der Queue');
+      }
+      return apiClient<Auftrag>(`/api/auftraege/${encodeURIComponent(id!)}`);
+    },
     enabled: !!id,
   });
 }
@@ -55,8 +101,11 @@ export function useCreateAuftrag() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: AuftragInput) =>
-      apiClient<Auftrag>('/api/auftraege', { method: 'POST', body: input }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] }),
+      createAuftragOnlineOrQueue(input as unknown as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
+      qc.invalidateQueries({ queryKey: QUEUE_LENGTH_KEY });
+    },
   });
 }
 
@@ -64,13 +113,11 @@ export function useUpdateAuftrag() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: AuftragInput }) =>
-      apiClient<Auftrag>(`/api/auftraege/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        body: input,
-      }),
+      updateAuftragOnlineOrQueue(id, input as unknown as Record<string, unknown>),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
       qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY, id] });
+      qc.invalidateQueries({ queryKey: QUEUE_LENGTH_KEY });
     },
   });
 }
@@ -78,11 +125,11 @@ export function useUpdateAuftrag() {
 export function useDeleteAuftrag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiClient<{ ok: true }>(`/api/auftraege/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] }),
+    mutationFn: (id: string) => deleteAuftragOnlineOrQueue(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [AUFTRAEGE_QUERY_KEY] });
+      qc.invalidateQueries({ queryKey: QUEUE_LENGTH_KEY });
+    },
   });
 }
 
