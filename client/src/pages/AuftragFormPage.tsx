@@ -7,6 +7,7 @@ import type {
   AuftragMaterial,
   AuftragMitarbeiter,
   AuftragTyp,
+  ChecklistenItem,
   Teilleistung,
 } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ import {
 } from '@/components/auftrag/VorlageSaveDialog';
 import { AuftragAktionenDialog } from '@/components/auftrag/AuftragAktionenDialog';
 import { TeilleistungenSection } from '@/components/auftrag/TeilleistungenSection';
+import { ChecklisteSection } from '@/components/auftrag/ChecklisteSection';
 import { useAutosaveDraft } from '@/hooks/useAutosaveDraft';
 
 interface FormState {
@@ -60,6 +62,7 @@ interface FormState {
   materialien: AuftragMaterial[];
   signature_data_url: string | null;
   teilleistungen: Teilleistung[];
+  checkliste: ChecklistenItem[] | null;
 }
 
 const todayIso = (): string => new Date().toISOString().slice(0, 10);
@@ -76,6 +79,7 @@ const EMPTY_STATE: FormState = {
   materialien: [],
   signature_data_url: null,
   teilleistungen: [],
+  checkliste: null,
 };
 
 function fromAuftrag(a: Auftrag): FormState {
@@ -91,6 +95,7 @@ function fromAuftrag(a: Auftrag): FormState {
     materialien: a.materialien,
     signature_data_url: a.signature_data_url,
     teilleistungen: a.teilleistungen,
+    checkliste: a.checkliste,
   };
 }
 
@@ -109,6 +114,7 @@ function toInput(state: FormState): AuftragInput {
     // Unterschrift nur bei Arbeitszettel mitsenden — sonst leeren
     signature_data_url: state.typ === 'arbeitszettel' ? state.signature_data_url : null,
     teilleistungen: state.teilleistungen,
+    checkliste: state.checkliste,
   };
 }
 
@@ -482,6 +488,26 @@ export function AuftragFormPage() {
             />
           </CardContent>
         </Card>
+
+        {state.typ !== 'lieferschein' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Checkliste</CardTitle>
+              <CardDescription className="text-xs">
+                Optional. Aus einer Vorlage laden oder eigene Punkte ergänzen.
+                Abgehakte Punkte erscheinen im PDF.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChecklisteSection
+                value={state.checkliste}
+                onChange={(checkliste) => setState((s) => ({ ...s, checkliste }))}
+                auftragTyp={state.typ}
+                disabled={disabled}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-3">

@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/api';
 import { type KundeInput, useCreateKunde, useUpdateKunde } from '@/hooks/useKunden';
 import { useLexofficeStatus } from '@/hooks/useLexoffice';
+import { usePlzLookup } from '@/hooks/usePlzLookup';
 import { cn } from '@/lib/utils';
 
 // Discriminated-Union analog Backend.
@@ -117,12 +118,30 @@ export function KundeFormDialog({ kunde, onClose }: KundeFormDialogProps) {
   });
 
   const typ = form.watch('typ');
+  const plz = form.watch('plz');
+  const { lookup: lookupPlz } = usePlzLookup();
 
   // Wenn Typ wechselt, leere die jeweils irrelevanten Pflichtfelder nicht —
   // RHF behält die Werte, validiert aber nach dem neuen Schema.
   useEffect(() => {
     form.clearErrors();
   }, [typ, form]);
+
+  // PLZ-Lookup: sobald 5 Ziffern eingegeben sind und Ort noch leer, holen
+  // wir den Ort und schlagen ihn vor. Mit Debounce, damit man nicht bei
+  // jedem Tipper eine Request feuert.
+  useEffect(() => {
+    const value = (plz ?? '').toString().trim();
+    if (!/^\d{5}$/.test(value)) return;
+    const handle = setTimeout(async () => {
+      const result = await lookupPlz(value);
+      if (!result?.ort) return;
+      const currentOrt = (form.getValues('ort') ?? '').trim();
+      if (currentOrt) return; // Nicht überschreiben
+      form.setValue('ort', result.ort, { shouldValidate: false, shouldDirty: true });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [plz, lookupPlz, form]);
 
   const isPending = create.isPending || update.isPending;
 

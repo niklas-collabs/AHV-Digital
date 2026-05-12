@@ -11,12 +11,15 @@ import { startBackupCron } from './services/backup-service.js';
 import { auftragRouter } from './routes/auftrag.js';
 import { authRouter } from './routes/auth.js';
 import { backupRouter } from './routes/backup.js';
+import { checklisteRouter } from './routes/checkliste.js';
 import { configRouter } from './routes/config.js';
 import { kundeRouter } from './routes/kunde.js';
 import { lexofficeRouter } from './routes/lexoffice.js';
+import { logRouter } from './routes/log.js';
 import { logoRouter } from './routes/logo.js';
 import { mailRouter } from './routes/mail.js';
 import { pauschaleRouter } from './routes/pauschale.js';
+import { plzRouter } from './routes/plz.js';
 import { stufeRouter } from './routes/stufe.js';
 import { vorlageRouter } from './routes/vorlage.js';
 import { wartungRouter } from './routes/wartung.js';
@@ -85,7 +88,10 @@ app.use('/api/auftraege', auftragRouter);
 app.use('/api/lexoffice', lexofficeRouter);
 app.use('/api/mail', mailRouter);
 app.use('/api/vorlagen', vorlageRouter);
+app.use('/api/checklisten', checklisteRouter);
 app.use('/api/wartung', wartungRouter);
+app.use('/api/log', logRouter);
+app.use('/api/plz', plzRouter);
 app.use('/api/backups', backupRouter);
 // (1.8 ergaenzt /api/auftraege/:id/pdf)
 

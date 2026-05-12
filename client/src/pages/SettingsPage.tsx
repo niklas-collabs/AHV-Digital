@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { BarChart3, ChevronRight, LogOut } from 'lucide-react';
+import { BarChart3, ChevronRight, ClipboardList, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Card,
@@ -22,6 +22,7 @@ import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
 import { GmailSection } from '@/components/settings/GmailSection';
 import { VorlagenSection } from '@/components/settings/VorlagenSection';
+import { ChecklistenSection } from '@/components/settings/ChecklistenSection';
 import { BackupSection } from '@/components/settings/BackupSection';
 
 export function SettingsPage() {
@@ -59,6 +60,22 @@ export function SettingsPage() {
               <p className="text-base font-semibold">Statistik</p>
               <p className="text-xs text-muted-foreground">
                 Übersicht über Aufträge, Umsatz und Zeiträume
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </Card>
+
+        <Card>
+          <Link
+            to="/protokoll"
+            className="flex items-center gap-3 p-6 transition-colors hover:bg-accent/40"
+          >
+            <ClipboardList className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-base font-semibold">Aktionsprotokoll</p>
+              <p className="text-xs text-muted-foreground">
+                Letzte Aktionen — Aufträge, Mails, Wartungen
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -116,6 +133,19 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <PauschalenSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Checklisten-Vorlagen</CardTitle>
+            <CardDescription>
+              Wiederverwendbare Listen, die im Auftrags-Formular mit einem
+              Klick geladen werden — z.B. Standard-Wartungspunkte.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChecklistenSection />
           </CardContent>
         </Card>
 

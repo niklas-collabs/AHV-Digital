@@ -6,6 +6,7 @@ import type {
   AuftragMaterial,
   AuftragMitarbeiter,
   AuftragTyp,
+  ChecklistenItem,
   FirmaConfig,
   KundeSnapshot,
   Teilleistung,
@@ -91,6 +92,12 @@ export function generateAuftragPdf(ctx: PdfContext): Promise<Buffer> {
         if (allMat.length > 0) {
           drawSummen(doc, allMat);
         }
+      }
+
+      // Checkliste (Phase 3.4): wenn vorhanden, abgehakte/offene Punkte
+      // unterhalb der Material/Summen-Sektion darstellen.
+      if (ctx.auftrag.checkliste && ctx.auftrag.checkliste.length > 0) {
+        drawCheckliste(doc, ctx.auftrag.checkliste);
       }
 
       if (ctx.auftrag.typ !== 'angebot') {
@@ -479,6 +486,55 @@ function drawTeilleistung(
   if (t.materialien.length > 0) {
     drawMaterialTable(doc, t.materialien, { showPrices: options.showPrices });
   }
+}
+
+// ============================================================================
+// Checkliste
+// ============================================================================
+
+function drawCheckliste(doc: PDFKit.PDFDocument, items: ChecklistenItem[]): void {
+  if (doc.y > doc.page.height - PAGE_MARGIN - 80) {
+    doc.addPage();
+  }
+  doc.moveDown(0.5);
+
+  doc
+    .font(F_BOLD)
+    .fontSize(8)
+    .fillColor(COLOR_MUTED)
+    .text('CHECKLISTE', PAGE_MARGIN);
+  doc.moveDown(0.3);
+
+  const tableWidth = doc.page.width - PAGE_MARGIN * 2;
+  doc.font(F_REGULAR).fontSize(9).fillColor(COLOR_TEXT);
+
+  for (const item of items) {
+    if (doc.y > doc.page.height - PAGE_MARGIN - 30) {
+      doc.addPage();
+    }
+    const startY = doc.y;
+    // Checkbox-Quadrat
+    doc.rect(PAGE_MARGIN, startY + 1, 8, 8).lineWidth(0.6).strokeColor(COLOR_TEXT).stroke();
+    // Haken bei abgehakt
+    if (item.checked) {
+      doc
+        .moveTo(PAGE_MARGIN + 1.5, startY + 5.5)
+        .lineTo(PAGE_MARGIN + 3.5, startY + 7.5)
+        .lineTo(PAGE_MARGIN + 6.5, startY + 2)
+        .lineWidth(1)
+        .strokeColor(COLOR_TEXT)
+        .stroke();
+    }
+    doc
+      .text(item.text || '—', PAGE_MARGIN + 14, startY, {
+        width: tableWidth - 14,
+      });
+    doc.y = Math.max(doc.y, startY + 12);
+  }
+
+  doc.moveDown(0.5);
+  doc.x = PAGE_MARGIN;
+  doc.fillColor(COLOR_TEXT);
 }
 
 function collectAllMaterialien(auftrag: Auftrag): AuftragMaterial[] {

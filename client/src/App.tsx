@@ -10,6 +10,7 @@ import { AuftraegePage } from '@/pages/AuftraegePage';
 import { AuftragFormPage } from '@/pages/AuftragFormPage';
 import { StatistikPage } from '@/pages/StatistikPage';
 import { WartungPage } from '@/pages/WartungPage';
+import { ProtokollPage } from '@/pages/ProtokollPage';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
@@ -38,6 +39,7 @@ export function App() {
             <Route path="/kunden/:id" element={<KundeDetailPage />} />
             <Route path="/wartung" element={<WartungPage />} />
             <Route path="/statistik" element={<StatistikPage />} />
+            <Route path="/protokoll" element={<ProtokollPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
