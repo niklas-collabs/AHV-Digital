@@ -10,6 +10,8 @@ import { AuftraegePage } from '@/pages/AuftraegePage';
 import { AuftragFormPage } from '@/pages/AuftragFormPage';
 import { StatistikPage } from '@/pages/StatistikPage';
 import { WartungPage } from '@/pages/WartungPage';
+import { AnlagenPage } from '@/pages/AnlagenPage';
+import { AnlageDetailPage } from '@/pages/AnlageDetailPage';
 import { ProtokollPage } from '@/pages/ProtokollPage';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import { GlobalSearch } from '@/components/GlobalSearch';
@@ -38,6 +40,9 @@ export function App() {
             <Route path="/kunden" element={<KundenPage />} />
             <Route path="/kunden/:id" element={<KundeDetailPage />} />
             <Route path="/wartung" element={<WartungPage />} />
+            <Route path="/anlagen" element={<AnlagenPage />} />
+            <Route path="/anlagen/:id" element={<AnlageDetailPage />} />
+            <Route path="/qr/:id" element={<AnlageDetailPage />} />
             <Route path="/statistik" element={<StatistikPage />} />
             <Route path="/protokoll" element={<ProtokollPage />} />
             <Route path="/settings" element={<SettingsPage />} />

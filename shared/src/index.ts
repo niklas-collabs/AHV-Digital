@@ -153,6 +153,18 @@ export interface WartungsHistorie {
   auftrag_id: string | null;
 }
 
+/** Anlage mit QR-Code (Phase 3.3). Wird ausgedruckt und an die Anlage
+ *  geklebt — Scan landet auf /qr/:id mit Historie + Quick-Auftrag. */
+export interface AnlageQr {
+  id: string;
+  kunde_id: string | null;
+  kunde_name: string;
+  anlage: string;
+  standort: string | null;
+  wartungsplan_id: string | null;
+  erstellt_am: string;
+}
+
 // === Checklisten-Vorlagen ===
 
 export type ChecklistenVorlageTyp = 'wartung' | 'arbeitszettel' | 'angebot';

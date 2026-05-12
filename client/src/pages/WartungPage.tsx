@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
   Pencil,
   Plus,
+  QrCode,
   Trash2,
   Wrench,
 } from 'lucide-react';
@@ -75,6 +77,11 @@ export function WartungPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
           <h1 className="flex-1 text-lg font-semibold">Wartung</h1>
+          <Button asChild variant="outline" size="icon" title="Anlagen / QR-Codes">
+            <Link to="/anlagen" aria-label="Anlagen">
+              <QrCode className="h-4 w-4" />
+            </Link>
+          </Button>
           <Button onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" />
             Neu
