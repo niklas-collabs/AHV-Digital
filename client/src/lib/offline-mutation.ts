@@ -102,6 +102,7 @@ export async function createAuftragOnlineOrQueue(
     checkliste: (input.checkliste as Auftrag['checkliste']) ?? null,
     teilleistungen: (input.teilleistungen as Auftrag['teilleistungen']) ?? [],
     urspruenglicher_auftrag_id: null,
+    lexoffice_invoice_id: null,
     erstellt_am: now,
     geaendert_am: now,
     abgeschickt_am: null,

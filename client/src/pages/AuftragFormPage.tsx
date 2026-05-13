@@ -159,13 +159,15 @@ export function AuftragFormPage() {
   }, [existing]);
 
   // Autosave: speichert state in localStorage nach 1 s Inaktivität.
-  // Bei abgeschickten Aufträgen NICHT aktiv, weil sie read-only sind.
+  // Bei abgeschickten Aufträgen NICHT aktiv (read-only), und auch nicht
+  // bei Pending-Aufträgen (Temp-ID, kann ohnehin nicht editiert werden).
   const draftId = isEdit ? id! : 'new';
+  const isPending = draftId.startsWith('tmp:');
   const isAbgeschicktForDraft = existing?.status === 'abgeschickt';
   const { lastSavedAt, clear: clearDraft, getStoredDraft } = useAutosaveDraft(
     draftId,
     state,
-    { enabled: !isAbgeschicktForDraft },
+    { enabled: !isAbgeschicktForDraft && !isPending },
   );
 
   // Beim ersten Render: gibt es einen lokalen Entwurf? Wenn ja und er ist
@@ -222,8 +224,10 @@ export function AuftragFormPage() {
   }, [isEdit, location.state, location.pathname, navigate]);
 
   const isAbgeschickt = existing?.status === 'abgeschickt';
+  const isPendingSync = !!existing && existing.id.startsWith('tmp:');
   const disabled =
     isAbgeschickt ||
+    isPendingSync ||
     create.isPending ||
     update.isPending ||
     abschicken.isPending ||
@@ -374,7 +378,7 @@ export function AuftragFormPage() {
             übernommen
           </div>
         )}
-        {existing && (lexofficeStatus?.apiKeySet ?? false) && (
+        {existing && !existing.id.startsWith('tmp:') && (lexofficeStatus?.apiKeySet ?? false) && (
           <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 pb-2 text-xs">
             {existing.lexoffice_invoice_id ? (
               <>

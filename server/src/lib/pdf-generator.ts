@@ -11,6 +11,7 @@ import type {
   KundeSnapshot,
   Teilleistung,
 } from '@ahv/shared';
+import { computeLohnkosten } from './lohnkosten.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,9 @@ export interface PdfContext {
   auftrag: Auftrag;
   firma: FirmaConfig | null;
   logo: { buffer: Buffer; mime: string } | null;
+  /** MwSt-Satz auf Mitarbeiter-Stunden für die § 35a-Berechnung.
+   *  Default 19% — wird vom Aufrufer aus der Config übergeben. */
+  lohnMwstProzent?: number;
 }
 
 const TYP_LABEL: Record<AuftragTyp, string> = {
@@ -90,7 +94,7 @@ export function generateAuftragPdf(ctx: PdfContext): Promise<Buffer> {
       if (showPrices) {
         const allMat = collectAllMaterialien(ctx.auftrag);
         if (allMat.length > 0) {
-          drawSummen(doc, allMat);
+          drawSummen(doc, ctx.auftrag, allMat, ctx.lohnMwstProzent ?? 19);
         }
       }
 
@@ -548,7 +552,12 @@ function collectAllMaterialien(auftrag: Auftrag): AuftragMaterial[] {
 // Summen
 // ============================================================================
 
-function drawSummen(doc: PDFKit.PDFDocument, materialien: AuftragMaterial[]): void {
+function drawSummen(
+  doc: PDFKit.PDFDocument,
+  auftrag: Auftrag,
+  materialien: AuftragMaterial[],
+  lohnMwstProzent: number,
+): void {
   // Berechne pro MwSt-Satz
   const byMwst = new Map<number, { netto: number; ust: number }>();
   for (const m of materialien) {
@@ -596,20 +605,25 @@ function drawSummen(doc: PDFKit.PDFDocument, materialien: AuftragMaterial[]): vo
 
   // §35a EStG: Lohnkostenanteil separat ausweisen, falls vorhanden.
   // Privatkunden können diesen Betrag in der Steuererklärung absetzen.
-  const lohnkostenBrutto = materialien
-    .filter((m) => m.ist_lohnkosten)
-    .reduce((sum, m) => {
-      const netto = m.menge * m.preis_netto;
-      return sum + netto * (1 + m.mwst_prozent / 100);
-    }, 0);
-  if (lohnkostenBrutto > 0) {
+  // Berechnung MUSS dieselbe sein wie beim Lexoffice-Push — sonst stehen
+  // im PDF und in der Lexoffice-Rechnung verschiedene Beträge.
+  const lk = computeLohnkosten(auftrag, lohnMwstProzent);
+  if (lk.brutto > 0) {
     y += 6;
     doc
       .font(F_REGULAR)
       .fontSize(8)
       .fillColor(COLOR_MUTED)
       .text(
-        `davon Lohnkosten gem. § 35a EStG (brutto): ${formatEuro(lohnkostenBrutto)}`,
+        `davon Lohnkosten gem. § 35a EStG (brutto): ${formatEuro(lk.brutto)}`,
+        left,
+        y,
+        { width: 200, align: 'right' },
+      );
+    y = doc.y + 2;
+    doc
+      .text(
+        `darin enthaltene USt: ${formatEuro(lk.ust)}`,
         left,
         y,
         { width: 200, align: 'right' },

@@ -14,6 +14,17 @@ import {
  */
 const MAX_ATTEMPTS = 5;
 
+/**
+ * Signal an syncQueue: Sync abbrechen weil Auth fehlt. Items bleiben in
+ * der Queue, beim nächsten Trigger (nach Re-Login) wird's erneut probiert.
+ */
+class AuthRequiredError extends Error {
+  constructor() {
+    super('Authentifizierung erforderlich');
+    this.name = 'AuthRequiredError';
+  }
+}
+
 export interface SyncResult {
   ok: number;
   failed: number;
@@ -43,7 +54,17 @@ export async function syncQueue(
   try {
     const items = await listQueue();
     for (const item of items) {
-      const success = await trySync(item);
+      let success: boolean;
+      try {
+        success = await trySync(item);
+      } catch (err) {
+        if (err instanceof AuthRequiredError) {
+          // Auth fehlt — Items bleiben unangetastet, der nächste Sync
+          // versucht es erneut. Wir brechen die ganze Runde ab.
+          return result;
+        }
+        throw err;
+      }
       if (success) {
         await removeFromQueue(item.id!);
         // Pending-Entity (falls Create-Mutation) auch entfernen
@@ -85,6 +106,16 @@ async function trySync(item: QueuedMutation): Promise<boolean> {
     const res = await fetch(item.path, init);
 
     if (res.ok) return true;
+
+    // 401/403 → KEIN endgültiger Fehler. Der User muss sich neu einloggen,
+    // dann triggert der nächste online-Event den Sync erneut. Die Queue
+    // bleibt unverändert — würden wir attempts hochzählen, ginge bei
+    // langem Offline-Status die ganze Arbeit verloren.
+    if (res.status === 401 || res.status === 403) {
+      // Sync abbrechen — alle weiteren Items würden auch 401 kriegen.
+      // Wir werfen so, dass syncQueue weiß: stoppe komplett.
+      throw new AuthRequiredError();
+    }
 
     // 4xx → endgültiger Fehler. Wir incrementen attempts auf MAX, damit
     // syncQueue ihn rauswirft. 5xx → retry-fähig.

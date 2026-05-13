@@ -140,9 +140,11 @@ export async function sendAuftragMail(
     }
   }
 
-  // PDF generieren
+  // PDF generieren — Lohnkosten-MwSt aus Config (gleiche Logik wie
+  // beim Lexoffice-Push, damit Kunde überall identischen § 35a-Ausweis sieht)
   const logo = readLogo(db, resolveUploadsDir());
-  const pdfBuffer = await generateAuftragPdf({ auftrag, firma, logo });
+  const lohnMwstProzent = getConfig(db, 'lexoffice_lohn_mwst') ?? 19;
+  const pdfBuffer = await generateAuftragPdf({ auftrag, firma, logo, lohnMwstProzent });
 
   // Foto-Anhänge sammeln
   let fotoAttachments: { filename: string; content: Buffer; contentType: string }[] = [];

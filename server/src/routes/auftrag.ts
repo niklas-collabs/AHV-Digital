@@ -194,7 +194,8 @@ auftragRouter.get('/:id/pdf', async (req, res, next) => {
     }
     const firma = getConfig(db, 'firma');
     const logo = readLogo(db, resolveUploadsDir());
-    const buffer = await generateAuftragPdf({ auftrag, firma, logo });
+    const lohnMwstProzent = getConfig(db, 'lexoffice_lohn_mwst') ?? 19;
+    const buffer = await generateAuftragPdf({ auftrag, firma, logo, lohnMwstProzent });
 
     const safeTitle = (auftrag.titel || auftrag.id.slice(0, 8))
       .replace(/[^a-zA-Z0-9-_äöüÄÖÜ ]/g, '')

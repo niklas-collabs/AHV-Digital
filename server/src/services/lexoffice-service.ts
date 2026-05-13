@@ -20,6 +20,10 @@ import {
 import { getAuftrag } from './auftrag-service.js';
 import { recordLog } from './log-service.js';
 import { logger } from '../lib/logger.js';
+import {
+  computeLohnkosten as computeLohnkostenShared,
+  type LohnkostenResult,
+} from '../lib/lohnkosten.js';
 
 export class LexofficeServiceError extends Error {
   constructor(
@@ -303,68 +307,24 @@ function formatEuroComma(n: number): string {
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.')} €`;
 }
 
-export interface LohnkostenResult {
-  netto: number;
-  brutto: number;
-  ust: number;
-}
-
-/**
- * Berechnet die Lohnkosten-Anteile eines Auftrags (für den §35a-Footer).
- *
- * - Material/Pauschalen mit ist_lohnkosten=true: brutto = netto * (1 + mwst/100)
- * - Teilleistungen werden ebenfalls aggregiert (gleiche Logik)
- * - Mitarbeiter-Stunden: ALLE als Lohnkosten gezählt, MwSt aus Config
- *   (default 19%)
- *
- * Liefert exakt zwei Nachkommastellen — pro Position gerundet damit das
- * mit dem zusammenpasst was Lexoffice am Ende ausrechnet.
- */
-export function computeLohnkosten(
-  auftrag: Auftrag,
-  lohnMwst: number,
-): LohnkostenResult {
-  let netto = 0;
-  let ust = 0;
-
-  for (const m of auftrag.materialien) {
-    if (!m.ist_lohnkosten) continue;
-    const posNetto = round2(m.menge * m.preis_netto);
-    const posUst = round2((posNetto * m.mwst_prozent) / 100);
-    netto += posNetto;
-    ust += posUst;
-  }
-
-  for (const t of auftrag.teilleistungen) {
-    for (const m of t.materialien) {
-      if (!m.ist_lohnkosten) continue;
-      const posNetto = round2(m.menge * m.preis_netto);
-      const posUst = round2((posNetto * m.mwst_prozent) / 100);
-      netto += posNetto;
-      ust += posUst;
-    }
-  }
-
-  // Mitarbeiter-Stunden: immer Lohnkosten
-  const allMitarbeiter = [
-    ...auftrag.mitarbeiter,
-    ...auftrag.teilleistungen.flatMap((t) => t.mitarbeiter),
-  ];
-  for (const ma of allMitarbeiter) {
-    const posNetto = round2(ma.stundenpreis * ma.stunden);
-    const posUst = round2((posNetto * lohnMwst) / 100);
-    netto += posNetto;
-    ust += posUst;
-  }
-
-  netto = round2(netto);
-  ust = round2(ust);
-  const brutto = round2(netto + ust);
-  return { netto, brutto, ust };
-}
+/** Re-Export aus dem geteilten Helper — Tests greifen darauf zu. */
+export { computeLohnkostenShared as computeLohnkosten };
+export type { LohnkostenResult };
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Wandelt ein YYYY-MM-DD in das von Lexoffice erwartete ISO-Datetime mit
+ * Zeitzone um. Wir nehmen 12:00 Uhr UTC — egal in welcher Zeitzone der
+ * Server läuft, das Datum bleibt korrekt (kein Off-by-One zu Mitternacht).
+ */
+function isoDateToVoucherDate(iso: string): string {
+  // Validierung — falls aus irgendeinem Grund ein ungültiges Datum
+  // reinkommt, schicken wir es so wie es ist; Lexoffice wird es ablehnen.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  return `${iso}T12:00:00.000Z`;
 }
 
 /** Setzt Platzhalter im Footer-Template. */
@@ -456,7 +416,7 @@ export function auftragToInvoicePayload(
     });
   }
 
-  const lohnkosten = computeLohnkosten(auftrag, options.lohnMwst);
+  const lohnkosten = computeLohnkostenShared(auftrag, options.lohnMwst);
   const footer = lohnkosten.brutto > 0 ? renderFooter(options.footerTemplate, lohnkosten) : '';
 
   // Adresse: Wenn lexoffice_id da → verknüpfen, sonst aus Snapshot bauen
@@ -467,7 +427,7 @@ export function auftragToInvoicePayload(
       : [snap.vorname, snap.nachname].filter(Boolean).join(' ');
 
   return {
-    voucherDate: `${auftrag.datum}T00:00:00.000+02:00`,
+    voucherDate: isoDateToVoucherDate(auftrag.datum),
     address: kundeLexofficeId
       ? { contactId: kundeLexofficeId }
       : {
@@ -481,7 +441,7 @@ export function auftragToInvoicePayload(
     totalPrice: { currency: 'EUR' },
     taxConditions: { taxType: 'net' },
     shippingConditions: {
-      shippingDate: `${auftrag.datum}T00:00:00.000+02:00`,
+      shippingDate: isoDateToVoucherDate(auftrag.datum),
       shippingType: 'service',
     },
     paymentConditions: {
@@ -503,6 +463,13 @@ function readLohnMwst(db: Database.Database): number {
 }
 
 /**
+ * Concurrency-Schutz: blockt parallele Pushs für denselben Auftrag.
+ * Verhindert dass durch Doppelklick / mehrere Tabs zwei Rechnungen
+ * angelegt werden.
+ */
+const activePushes = new Set<string>();
+
+/**
  * Schickt einen Auftrag als Rechnung-Entwurf an Lexoffice.
  *
  * Ablauf:
@@ -512,6 +479,24 @@ function readLohnMwst(db: Database.Database): number {
  *  4. lexoffice_invoice_id im Auftrag speichern
  */
 export async function pushAuftragToLexoffice(
+  db: Database.Database,
+  auftragId: string,
+): Promise<{ invoiceId: string; created: boolean }> {
+  if (activePushes.has(auftragId)) {
+    throw new LexofficeServiceError(
+      'API_ERROR',
+      'Push läuft bereits — bitte kurz warten',
+    );
+  }
+  activePushes.add(auftragId);
+  try {
+    return await doPushAuftragToLexoffice(db, auftragId);
+  } finally {
+    activePushes.delete(auftragId);
+  }
+}
+
+async function doPushAuftragToLexoffice(
   db: Database.Database,
   auftragId: string,
 ): Promise<{ invoiceId: string; created: boolean }> {
@@ -622,15 +607,25 @@ export async function resyncLexofficeFooter(
     //
     // Das ist für Phase 1 sauberer als ein fragiler Pattern-Match auf
     // Lexoffice-LineItems.
-    const lohnkosten = computeLohnkosten(auftrag, readLohnMwst(db));
+    const lohnkosten = computeLohnkostenShared(auftrag, readLohnMwst(db));
     const footer =
       lohnkosten.brutto > 0
         ? renderFooter(readFooterTemplate(db), lohnkosten)
         : '';
 
+    // Nur die Input-Felder durchreichen — Lexoffice PUT verträgt keine
+    // berechneten Felder wie id/createdDate/voucherNumber/voucherStatus.
     const updated: LexofficeInvoiceInput & { version: number } = {
-      ...invoice,
+      voucherDate: invoice.voucherDate,
+      address: invoice.address,
+      lineItems: invoice.lineItems,
+      totalPrice: invoice.totalPrice,
+      taxConditions: invoice.taxConditions,
+      paymentConditions: invoice.paymentConditions,
+      shippingConditions: invoice.shippingConditions,
       remark: footer || invoice.remark || '',
+      introduction: invoice.introduction,
+      title: invoice.title,
       version: invoice.version,
     };
 
