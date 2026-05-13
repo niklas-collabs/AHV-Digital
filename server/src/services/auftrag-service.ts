@@ -184,19 +184,16 @@ function buildSnapshot(kunde: Kunde): KundeSnapshot {
 
 /**
  * Aggregierte Statistik über alle Aufträge — Mini-Dashboard.
- * Liefert Counts und Netto-Summen je Zeitraum (heute / 7d / 30d / gesamt).
+ * Reine Anzahl-Statistik: pro Zeitraum + Status + Typ. Umsatzzahlen
+ * wurden bewusst rausgenommen — bei privaten Aufträgen mit
+ * Material-Preisen erst im Büro nachgepflegt würde die App ohnehin
+ * nicht den echten Umsatz zeigen.
  */
 export interface AuftragStats {
   total: number;
   draft: number;
   abgeschickt: number;
   byTyp: Record<AuftragTyp, number>;
-  netto: {
-    gesamt: number;
-    heute: number;
-    woche: number;
-    monat: number;
-  };
   count: {
     heute: number;
     woche: number;
@@ -204,51 +201,21 @@ export interface AuftragStats {
   };
 }
 
-function auftragNetto(row: {
-  mitarbeiter: string;
-  materialien: string;
-  teilleistungen: string;
-}): number {
-  const ma = safeParse<Array<{ stundenpreis?: number; stunden?: number }>>(row.mitarbeiter, []);
-  const mat = safeParse<Array<{ menge?: number; preis_netto?: number }>>(row.materialien, []);
-  const tl = safeParse<
-    Array<{
-      mitarbeiter?: Array<{ stundenpreis?: number; stunden?: number }>;
-      materialien?: Array<{ menge?: number; preis_netto?: number }>;
-    }>
-  >(row.teilleistungen, []);
-  let sum = 0;
-  for (const m of ma) sum += (m.stundenpreis ?? 0) * (m.stunden ?? 0);
-  for (const m of mat) sum += (m.preis_netto ?? 0) * (m.menge ?? 0);
-  for (const t of tl) {
-    for (const m of t.mitarbeiter ?? []) sum += (m.stundenpreis ?? 0) * (m.stunden ?? 0);
-    for (const m of t.materialien ?? []) sum += (m.preis_netto ?? 0) * (m.menge ?? 0);
-  }
-  return sum;
-}
-
 export function getAuftragStats(db: Database.Database): AuftragStats {
   const rows = db
-    .prepare(
-      'SELECT typ, status, datum, mitarbeiter, materialien, teilleistungen FROM auftrag',
-    )
+    .prepare('SELECT typ, status, datum FROM auftrag')
     .all() as Array<{
     typ: AuftragTyp;
     status: AuftragStatus;
     datum: string;
-    mitarbeiter: string;
-    materialien: string;
-    teilleistungen: string;
   }>;
 
   const today = new Date().toISOString().slice(0, 10);
-  // Anfang der ISO-Woche (Montag)
   const now = new Date();
   const dow = (now.getDay() + 6) % 7;
   const monday = new Date(now);
   monday.setDate(now.getDate() - dow);
   const wochenStart = monday.toISOString().slice(0, 10);
-  // Anfang Monat
   const monatStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
   const stats: AuftragStats = {
@@ -256,7 +223,6 @@ export function getAuftragStats(db: Database.Database): AuftragStats {
     draft: 0,
     abgeschickt: 0,
     byTyp: { arbeitszettel: 0, angebot: 0, lieferschein: 0 },
-    netto: { gesamt: 0, heute: 0, woche: 0, monat: 0 },
     count: { heute: 0, woche: 0, monat: 0 },
   };
 
@@ -264,22 +230,9 @@ export function getAuftragStats(db: Database.Database): AuftragStats {
     if (r.status === 'entwurf') stats.draft++;
     else stats.abgeschickt++;
     stats.byTyp[r.typ]++;
-
-    const netto = auftragNetto(r);
-    stats.netto.gesamt += netto;
-
-    if (r.datum === today) {
-      stats.count.heute++;
-      stats.netto.heute += netto;
-    }
-    if (r.datum >= wochenStart) {
-      stats.count.woche++;
-      stats.netto.woche += netto;
-    }
-    if (r.datum >= monatStart) {
-      stats.count.monat++;
-      stats.netto.monat += netto;
-    }
+    if (r.datum === today) stats.count.heute++;
+    if (r.datum >= wochenStart) stats.count.woche++;
+    if (r.datum >= monatStart) stats.count.monat++;
   }
 
   return stats;

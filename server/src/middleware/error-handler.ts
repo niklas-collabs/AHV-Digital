@@ -41,6 +41,8 @@ export function errorHandler(
     let status = 401;
     if (err.code === 'LOCKED') status = 423;
     else if (err.code === 'NEEDS_SETUP') status = 412;
+    else if (err.code === 'USER_NOT_FOUND') status = 404;
+    else if (err.code === 'LAST_USER') status = 409;
     else if (err.code === 'INVALID_FORMAT' || err.code === 'OLD_PIN_REQUIRED') status = 400;
 
     res.status(status).json({

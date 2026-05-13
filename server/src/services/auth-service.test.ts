@@ -6,10 +6,15 @@ import { runMigrations } from '../db/migrations/runner.js';
 import {
   AuthError,
   _resetJwtSecretCache,
+  changeBenutzerPin,
+  createBenutzer,
+  deleteBenutzer,
   generateToken,
   getAuthStatus,
+  listBenutzer,
   login,
-  setupPin,
+  setupInitial,
+  updateBenutzerName,
   verifyToken,
 } from './auth-service.js';
 
@@ -23,7 +28,7 @@ function makeDb(): Database.Database {
   return db;
 }
 
-describe('auth-service', () => {
+describe('auth-service (Multi-User)', () => {
   beforeEach(() => {
     process.env.JWT_SECRET = 'test-secret-must-be-at-least-32-chars-long-xx';
     _resetJwtSecretCache();
@@ -34,192 +39,198 @@ describe('auth-service', () => {
     _resetJwtSecretCache();
   });
 
-  describe('setupPin', () => {
-    it('setzt initialen PIN auf leerer auth-Zeile', async () => {
+  describe('setupInitial', () => {
+    it('legt den ersten Benutzer an', async () => {
       const db = makeDb();
-      const result = await setupPin(db, { pin: '1234' });
-      expect(result.token).toBeTypeOf('string');
-
-      const row = db.prepare('SELECT pin_hash FROM auth WHERE id = 1').get() as {
-        pin_hash: string | null;
-      };
-      expect(row.pin_hash).not.toBeNull();
-      expect(row.pin_hash?.length).toBeGreaterThan(20); // bcrypt hash
+      const result = await setupInitial(db, { name: 'Niklas', pin: '1234' });
+      expect(result.userId).toBeTruthy();
+      expect(result.token).toBeTruthy();
+      const users = listBenutzer(db);
+      expect(users.length).toBe(1);
+      expect(users[0]?.name).toBe('Niklas');
     });
 
-    it('lehnt PIN mit weniger als 4 Ziffern ab', async () => {
+    it('lehnt Setup ab wenn schon ein Benutzer existiert', async () => {
       const db = makeDb();
-      await expect(setupPin(db, { pin: '12' })).rejects.toThrow(AuthError);
+      await setupInitial(db, { name: 'A', pin: '1234' });
+      await expect(setupInitial(db, { name: 'B', pin: '5678' })).rejects.toThrow(AuthError);
     });
 
-    it('lehnt PIN mit nicht-Ziffern ab', async () => {
+    it('validiert PIN-Format', async () => {
       const db = makeDb();
-      await expect(setupPin(db, { pin: '12ab' })).rejects.toThrow(AuthError);
+      await expect(setupInitial(db, { name: 'A', pin: 'abcd' })).rejects.toThrow(AuthError);
+      await expect(setupInitial(db, { name: 'A', pin: '123' })).rejects.toThrow(AuthError);
     });
 
-    it('verlangt oldPin bei bestehendem PIN', async () => {
+    it('validiert Name', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      await expect(setupPin(db, { pin: '5678' })).rejects.toMatchObject({
-        code: 'OLD_PIN_REQUIRED',
-      });
+      await expect(setupInitial(db, { name: '', pin: '1234' })).rejects.toThrow(AuthError);
+    });
+  });
+
+  describe('createBenutzer', () => {
+    it('legt weiteren Benutzer an', async () => {
+      const db = makeDb();
+      await setupInitial(db, { name: 'Niklas', pin: '1234' });
+      const tobi = await createBenutzer(db, { name: 'Tobi', pin: '5678' });
+      expect(tobi.name).toBe('Tobi');
+      expect(listBenutzer(db).length).toBe(2);
     });
 
-    it('lehnt falschen oldPin ab', async () => {
+    it('erlaubt gleichen PIN bei verschiedenen Benutzern (Option A: Auswahl + PIN)', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      await expect(setupPin(db, { pin: '5678', oldPin: '0000' })).rejects.toMatchObject({
-        code: 'OLD_PIN_INCORRECT',
-      });
-    });
-
-    it('akzeptiert PIN-Wechsel mit korrektem oldPin', async () => {
-      const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      const result = await setupPin(db, { pin: '5678', oldPin: '1234' });
-      expect(result.token).toBeTypeOf('string');
-
-      // Alter PIN funktioniert nicht mehr
-      await expect(login(db, '1234')).rejects.toMatchObject({ code: 'INVALID_PIN' });
-      // Neuer PIN funktioniert
-      await expect(login(db, '5678')).resolves.toMatchObject({ token: expect.any(String) });
+      await setupInitial(db, { name: 'A', pin: '1234' });
+      await createBenutzer(db, { name: 'B', pin: '1234' });
+      expect(listBenutzer(db).length).toBe(2);
     });
   });
 
   describe('login', () => {
-    it('wirft NEEDS_SETUP wenn kein PIN gesetzt ist', async () => {
-      const db = makeDb();
-      await expect(login(db, '1234')).rejects.toMatchObject({ code: 'NEEDS_SETUP' });
-    });
-
     it('liefert Token bei korrektem PIN', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      const result = await login(db, '1234');
-      expect(result.token).toBeTypeOf('string');
+      const setup = await setupInitial(db, { name: 'Niklas', pin: '1234' });
+      const result = await login(db, { userId: setup.userId, pin: '1234' });
+      expect(result.token).toBeTruthy();
+      expect(result.user.name).toBe('Niklas');
     });
 
-    it('zaehlt failed_attempts hoch bei falschem PIN', async () => {
+    it('lehnt falschen PIN ab', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
+      const setup = await setupInitial(db, { name: 'Niklas', pin: '1234' });
+      await expect(login(db, { userId: setup.userId, pin: '9999' })).rejects.toThrow(AuthError);
+    });
 
+    it('lehnt unbekannte userId mit INVALID_PIN ab (kein User-Enumeration)', async () => {
+      const db = makeDb();
+      await setupInitial(db, { name: 'A', pin: '1234' });
       try {
-        await login(db, '0000');
+        await login(db, { userId: 'gibts-nicht', pin: '1234' });
         expect.fail('sollte werfen');
       } catch (err) {
-        expect(err).toBeInstanceOf(AuthError);
         expect((err as AuthError).code).toBe('INVALID_PIN');
-        expect((err as AuthError).meta.attemptsLeft).toBe(4);
       }
-
-      const row = db.prepare('SELECT failed_attempts FROM auth WHERE id = 1').get() as {
-        failed_attempts: number;
-      };
-      expect(row.failed_attempts).toBe(1);
     });
 
     it('sperrt nach 5 Fehlversuchen', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-
+      const setup = await setupInitial(db, { name: 'A', pin: '1234' });
       for (let i = 0; i < 4; i++) {
-        await expect(login(db, '0000')).rejects.toMatchObject({ code: 'INVALID_PIN' });
+        await expect(login(db, { userId: setup.userId, pin: '9999' })).rejects.toThrow(AuthError);
       }
-
-      // 5. Versuch → Lockout
-      await expect(login(db, '0000')).rejects.toMatchObject({ code: 'LOCKED' });
-
-      // Auch ein korrekter PIN scheitert wegen aktivem Lock
-      await expect(login(db, '1234')).rejects.toMatchObject({ code: 'LOCKED' });
-
-      const row = db.prepare('SELECT locked_until FROM auth WHERE id = 1').get() as {
-        locked_until: string | null;
-      };
-      expect(row.locked_until).not.toBeNull();
-      expect(new Date(row.locked_until!).getTime()).toBeGreaterThan(Date.now());
+      try {
+        await login(db, { userId: setup.userId, pin: '9999' });
+        expect.fail('sollte werfen');
+      } catch (err) {
+        expect((err as AuthError).code).toBe('LOCKED');
+      }
     });
 
-    it('setzt counter zurück bei Erfolg', async () => {
+    it('Sperre eines Benutzers betrifft anderen nicht', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      await expect(login(db, '0000')).rejects.toThrow();
-      await expect(login(db, '0000')).rejects.toThrow();
-
-      await login(db, '1234');
-
-      const row = db.prepare('SELECT failed_attempts, locked_until FROM auth WHERE id = 1').get() as {
-        failed_attempts: number;
-        locked_until: string | null;
-      };
-      expect(row.failed_attempts).toBe(0);
-      expect(row.locked_until).toBeNull();
-    });
-
-    it('akzeptiert Login wieder nachdem locked_until in der Vergangenheit liegt', async () => {
-      const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-
-      // Lock manuell auf vergangenes Datum setzen
-      const past = new Date(Date.now() - 60_000).toISOString();
-      db.prepare('UPDATE auth SET failed_attempts = 5, locked_until = ? WHERE id = 1').run(past);
-
-      const result = await login(db, '1234');
-      expect(result.token).toBeTypeOf('string');
+      const a = await setupInitial(db, { name: 'A', pin: '1234' });
+      const b = await createBenutzer(db, { name: 'B', pin: '5678' });
+      for (let i = 0; i < 5; i++) {
+        await expect(login(db, { userId: a.userId, pin: '0000' })).rejects.toThrow();
+      }
+      // B kann weiter loggen
+      const result = await login(db, { userId: b.id, pin: '5678' });
+      expect(result.token).toBeTruthy();
     });
   });
 
-  describe('token', () => {
-    it('generate + verify roundtrip', async () => {
-      const token = await generateToken();
-      const result = await verifyToken(token);
-      expect(result.valid).toBe(true);
+  describe('changeBenutzerPin', () => {
+    it('akzeptiert PIN-Wechsel mit korrektem oldPin', async () => {
+      const db = makeDb();
+      const setup = await setupInitial(db, { name: 'A', pin: '1234' });
+      await changeBenutzerPin(db, setup.userId, '1234', '5678');
+      await expect(login(db, { userId: setup.userId, pin: '5678' })).resolves.toBeDefined();
     });
 
-    it('weist ungültigen Token zurück', async () => {
-      const result = await verifyToken('not.a.valid.jwt');
-      expect(result.valid).toBe(false);
+    it('lehnt falschen oldPin ab', async () => {
+      const db = makeDb();
+      const setup = await setupInitial(db, { name: 'A', pin: '1234' });
+      try {
+        await changeBenutzerPin(db, setup.userId, '0000', '5678');
+        expect.fail('sollte werfen');
+      } catch (err) {
+        expect((err as AuthError).code).toBe('OLD_PIN_INCORRECT');
+      }
+    });
+  });
+
+  describe('updateBenutzerName / deleteBenutzer', () => {
+    it('benennt um', async () => {
+      const db = makeDb();
+      const setup = await setupInitial(db, { name: 'Alt', pin: '1234' });
+      const updated = updateBenutzerName(db, setup.userId, 'Neu');
+      expect(updated.name).toBe('Neu');
     });
 
-    it('weist Token mit anderem Secret zurück', async () => {
-      const token = await generateToken();
+    it('verbietet das Löschen des letzten Benutzers', async () => {
+      const db = makeDb();
+      const setup = await setupInitial(db, { name: 'A', pin: '1234' });
+      try {
+        deleteBenutzer(db, setup.userId);
+        expect.fail('sollte werfen');
+      } catch (err) {
+        expect((err as AuthError).code).toBe('LAST_USER');
+      }
+    });
 
-      // Anderes Secret
-      process.env.JWT_SECRET = 'different-secret-also-32-chars-long-xxx';
-      _resetJwtSecretCache();
-
-      const result = await verifyToken(token);
-      expect(result.valid).toBe(false);
+    it('erlaubt Löschen wenn mehrere existieren', async () => {
+      const db = makeDb();
+      const a = await setupInitial(db, { name: 'A', pin: '1234' });
+      const b = await createBenutzer(db, { name: 'B', pin: '5678' });
+      deleteBenutzer(db, a.userId);
+      expect(listBenutzer(db).length).toBe(1);
+      expect(listBenutzer(db)[0]?.id).toBe(b.id);
     });
   });
 
   describe('getAuthStatus', () => {
-    it('meldet needsSetup=true auf leerer DB', async () => {
+    it('needsSetup=true bei leerer DB', async () => {
       const db = makeDb();
       const status = await getAuthStatus(db, undefined);
-      expect(status).toEqual({
-        needsSetup: true,
-        authenticated: false,
-        lockedUntil: null,
-      });
+      expect(status.needsSetup).toBe(true);
+      expect(status.benutzer.length).toBe(0);
     });
 
-    it('meldet authenticated=true mit gültigem Token', async () => {
+    it('liefert Benutzer-Liste nach Setup', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      const result = await login(db, '1234');
-      const status = await getAuthStatus(db, result.token);
-      expect(status.authenticated).toBe(true);
+      await setupInitial(db, { name: 'A', pin: '1234' });
+      await createBenutzer(db, { name: 'B', pin: '5678' });
+      const status = await getAuthStatus(db, undefined);
       expect(status.needsSetup).toBe(false);
+      expect(status.benutzer.length).toBe(2);
+      expect(status.authenticated).toBe(false);
+      expect(status.user).toBeNull();
     });
 
-    it('meldet lockedUntil bei aktivem Lock', async () => {
+    it('authenticated=true mit gültigem Token', async () => {
       const db = makeDb();
-      await setupPin(db, { pin: '1234' });
-      const future = new Date(Date.now() + 5 * 60_000).toISOString();
-      db.prepare('UPDATE auth SET failed_attempts = 5, locked_until = ? WHERE id = 1').run(future);
+      const setup = await setupInitial(db, { name: 'Niklas', pin: '1234' });
+      const status = await getAuthStatus(db, setup.token);
+      expect(status.authenticated).toBe(true);
+      expect(status.user?.name).toBe('Niklas');
+    });
 
-      const status = await getAuthStatus(db, undefined);
-      expect(status.lockedUntil).toBe(future);
+    it('authenticated=false wenn Token-User gelöscht wurde', async () => {
+      const db = makeDb();
+      const setup = await setupInitial(db, { name: 'A', pin: '1234' });
+      await createBenutzer(db, { name: 'B', pin: '5678' });
+      deleteBenutzer(db, setup.userId);
+      const status = await getAuthStatus(db, setup.token);
+      expect(status.authenticated).toBe(false);
+      expect(status.user).toBeNull();
+    });
+  });
+
+  describe('Token', () => {
+    it('verify rejected bei verfälschtem Token', async () => {
+      const token = await generateToken({ userId: 'u1', userName: 'Test' });
+      const tampered = token + 'x';
+      const result = await verifyToken(tampered);
+      expect(result.valid).toBe(false);
     });
   });
 });

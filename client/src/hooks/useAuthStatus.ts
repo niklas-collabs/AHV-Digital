@@ -21,3 +21,9 @@ export function useAuthStatus() {
     refetchOnReconnect: true,
   });
 }
+
+/** Praktischer Helper für „aktueller User" — gibt null wenn nicht eingeloggt. */
+export function useCurrentUser(): { id: string; name: string } | null {
+  const { data } = useAuthStatus();
+  return data?.user ?? null;
+}

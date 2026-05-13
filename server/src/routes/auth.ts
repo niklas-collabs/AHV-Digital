@@ -1,19 +1,25 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { getDb } from '../db/client.js';
-import { getAuthStatus, login, setupPin } from '../services/auth-service.js';
+import {
+  getAuthStatus,
+  login,
+  setupInitial,
+} from '../services/auth-service.js';
 import { COOKIE_NAME } from '../middleware/auth.js';
 
 const PIN_REGEX = /^\d{4}$/;
+const NAME_SCHEMA = z.string().min(1).max(50);
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const loginBody = z.object({
+  userId: z.string().min(1),
   pin: z.string().regex(PIN_REGEX, 'PIN muss genau 4 Ziffern haben'),
 });
 
 const setupBody = z.object({
+  name: NAME_SCHEMA,
   pin: z.string().regex(PIN_REGEX, 'PIN muss genau 4 Ziffern haben'),
-  oldPin: z.string().regex(PIN_REGEX).optional(),
 });
 
 function setAuthCookie(res: Response, token: string): void {
@@ -47,18 +53,23 @@ authRouter.get('/status', async (req, res, next) => {
 authRouter.post('/login', async (req, res, next) => {
   try {
     const body = loginBody.parse(req.body);
-    const result = await login(getDb(), body.pin);
+    const result = await login(getDb(), body);
     setAuthCookie(res, result.token);
-    res.json({ ok: true });
+    res.json({ ok: true, user: result.user });
   } catch (err) {
     next(err);
   }
 });
 
+/**
+ * Initial-Setup: legt den ersten Benutzer an. Sobald ein Benutzer
+ * existiert, wirft der Service einen Fehler — weitere Benutzer werden
+ * über /api/benutzer angelegt (Auth-gesichert).
+ */
 authRouter.post('/setup', async (req, res, next) => {
   try {
     const body = setupBody.parse(req.body);
-    const result = await setupPin(getDb(), body);
+    const result = await setupInitial(getDb(), body);
     setAuthCookie(res, result.token);
     res.json({ ok: true });
   } catch (err) {

@@ -9,14 +9,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PinPad } from '@/components/auth/PinPad';
 import { ApiError, apiClient } from '@/lib/api';
 import { AUTH_STATUS_QUERY_KEY } from '@/hooks/useAuthStatus';
 
-type Step = 'enter' | 'confirm';
+type Step = 'name' | 'pin' | 'confirm';
 
+/**
+ * Erstmaliger Setup: Name + 4-stelliger PIN (2× zur Bestätigung).
+ * Wird vom Server-Endpoint nur akzeptiert wenn noch KEIN Benutzer existiert.
+ * Weitere Benutzer werden später über die Settings → Benutzer angelegt.
+ */
 export function SetupPage() {
-  const [step, setStep] = useState<Step>('enter');
+  const [step, setStep] = useState<Step>('name');
+  const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -24,48 +33,93 @@ export function SetupPage() {
   const queryClient = useQueryClient();
 
   const setupMutation = useMutation({
-    mutationFn: (pin: string) =>
-      apiClient('/api/auth/setup', { method: 'POST', body: { pin } }),
+    mutationFn: (input: { name: string; pin: string }) =>
+      apiClient('/api/auth/setup', { method: 'POST', body: input }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: AUTH_STATUS_QUERY_KEY });
       navigate('/', { replace: true });
     },
     onError: (err: unknown) => {
       setErrorMsg(err instanceof ApiError ? err.message : 'Setup fehlgeschlagen');
-      reset();
+      setStep('pin');
+      setPin('');
+      setConfirmPin('');
     },
   });
 
-  function reset() {
-    setStep('enter');
-    setPin('');
-    setConfirmPin('');
-  }
-
-  // Schritt 1 → 2 wenn PIN komplett
   useEffect(() => {
-    if (step === 'enter' && pin.length === 4) {
+    if (step === 'pin' && pin.length === 4) {
       setStep('confirm');
     }
   }, [pin, step]);
 
-  // Schritt 2 abgeschlossen → entweder Match → Submit, oder Reset mit Hinweis
   useEffect(() => {
     if (step !== 'confirm' || confirmPin.length !== 4) return;
     if (confirmPin === pin) {
       setErrorMsg(null);
-      setupMutation.mutate(pin);
+      setupMutation.mutate({ name: name.trim(), pin });
     } else {
       setErrorMsg('PINs stimmen nicht überein, bitte neu eingeben');
-      reset();
+      setPin('');
+      setConfirmPin('');
+      setStep('pin');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirmPin, step]);
 
-  const currentValue = step === 'enter' ? pin : confirmPin;
-  const setCurrent = step === 'enter' ? setPin : setConfirmPin;
-  const description =
-    step === 'enter' ? 'Bitte einen 4-stelligen PIN setzen' : 'PIN bitte wiederholen';
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setErrorMsg('Name ist Pflicht');
+      return;
+    }
+    setErrorMsg(null);
+    setStep('pin');
+  };
+
+  if (step === 'name') {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Wrench className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Erste Einrichtung</CardTitle>
+            <CardDescription>Wie ist dein Name?</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleNameSubmit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="setup-name">Dein Name</Label>
+                <Input
+                  id="setup-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="z.B. Niklas"
+                  autoFocus
+                />
+              </div>
+              {errorMsg && (
+                <p className="text-center text-sm text-destructive">{errorMsg}</p>
+              )}
+              <Button type="submit" className="w-full">
+                Weiter
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Erscheint im Login-Bildschirm und im Aktionsprotokoll.
+                Weitere Benutzer kannst du später in den Einstellungen anlegen.
+              </p>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentValue = step === 'pin' ? pin : confirmPin;
+  const setCurrent = step === 'pin' ? setPin : setConfirmPin;
+  const description = step === 'pin' ? `Hallo ${name}! 4-stelligen PIN setzen` : 'PIN wiederholen';
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">

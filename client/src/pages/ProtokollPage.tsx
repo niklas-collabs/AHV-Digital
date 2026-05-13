@@ -64,7 +64,14 @@ export function ProtokollPage() {
               return (
                 <li key={e.id} className="flex items-start gap-3 p-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-sm font-medium">
+                      {label}
+                      {e.user_name && (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          · {e.user_name}
+                        </span>
+                      )}
+                    </p>
                     {e.message && (
                       <p className="truncate text-xs text-muted-foreground">{e.message}</p>
                     )}

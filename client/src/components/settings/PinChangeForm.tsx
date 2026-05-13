@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PinPad } from '@/components/auth/PinPad';
-import { ApiError, apiClient } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+import { useCurrentUser } from '@/hooks/useAuthStatus';
+import { useChangeOwnPin } from '@/hooks/useBenutzer';
 
 type Step = 'old' | 'new' | 'confirm';
 
@@ -20,22 +21,22 @@ export function PinChangeForm() {
   const [confirmPin, setConfirmPin] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const change = useMutation({
-    mutationFn: ({ pin, oldPin }: { pin: string; oldPin: string }) =>
-      apiClient('/api/auth/setup', { method: 'POST', body: { pin, oldPin } }),
-    onSuccess: () => {
-      toast.success('PIN gesetzt');
-      reset();
-    },
-    onError: (err: unknown) => {
-      if (err instanceof ApiError) {
-        setErrorMsg(translateError(err));
-      } else {
-        setErrorMsg('Fehler beim PIN-Wechsel');
-      }
-      reset();
-    },
-  });
+  const me = useCurrentUser();
+  const change = useChangeOwnPin();
+
+  const handleSuccess = () => {
+    toast.success('PIN gesetzt');
+    reset();
+  };
+
+  const handleError = (err: unknown) => {
+    if (err instanceof ApiError) {
+      setErrorMsg(translateError(err));
+    } else {
+      setErrorMsg('Fehler beim PIN-Wechsel');
+    }
+    reset();
+  };
 
   const reset = () => {
     setStep('old');
@@ -58,8 +59,15 @@ export function PinChangeForm() {
         reset();
         return;
       }
+      if (!me) {
+        setErrorMsg('Nicht eingeloggt');
+        return;
+      }
       setErrorMsg(null);
-      change.mutate({ pin: newPin, oldPin });
+      change.mutate(
+        { id: me.id, oldPin, newPin },
+        { onSuccess: handleSuccess, onError: handleError },
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirmPin, step]);

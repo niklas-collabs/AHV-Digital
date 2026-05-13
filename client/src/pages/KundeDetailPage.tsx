@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { Auftrag, AuftragTyp, Kunde } from '@ahv/shared';
+import type { AuftragTyp, Kunde } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useKunde } from '@/hooks/useKunden';
@@ -59,7 +59,6 @@ export function KundeDetailPage() {
   }
 
   const list = auftraege ?? [];
-  const summe = list.reduce((s, a) => s + computeAuftragNetto(a), 0);
 
   return (
     <>
@@ -160,7 +159,6 @@ export function KundeDetailPage() {
                 <ul className="divide-y divide-border rounded-md border border-border">
                   {list.map((a) => {
                     const Icon = TYP_ICON[a.typ];
-                    const netto = computeAuftragNetto(a);
                     return (
                       <li key={a.id} className="flex items-center gap-3 p-3">
                         <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -184,9 +182,6 @@ export function KundeDetailPage() {
                             </span>
                           </p>
                         </Link>
-                        <div className="text-right text-xs text-muted-foreground">
-                          {netto.toFixed(2)} €
-                        </div>
                         <Button
                           type="button"
                           variant="ghost"
@@ -203,13 +198,9 @@ export function KundeDetailPage() {
                     );
                   })}
                 </ul>
-                <div className="mt-3 flex justify-between text-sm text-muted-foreground">
-                  <span>{list.length} Aufträge gesamt</span>
-                  <span>
-                    Summe netto:{' '}
-                    <span className="font-semibold text-foreground">{summe.toFixed(2)} €</span>
-                  </span>
-                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {list.length} {list.length === 1 ? 'Auftrag' : 'Aufträge'} gesamt
+                </p>
               </>
             )}
           </CardContent>
@@ -232,15 +223,3 @@ function displayName(k: Kunde): string {
   return [k.vorname, k.nachname].filter(Boolean).join(' ');
 }
 
-function computeAuftragNetto(a: Auftrag): number {
-  const ma = a.mitarbeiter.reduce((s, m) => s + m.stundenpreis * m.stunden, 0);
-  const mat = a.materialien.reduce((s, m) => s + m.preis_netto * m.menge, 0);
-  const tl = a.teilleistungen.reduce((s, t) => {
-    return (
-      s +
-      t.mitarbeiter.reduce((mm, m) => mm + m.stundenpreis * m.stunden, 0) +
-      t.materialien.reduce((mm, m) => mm + m.preis_netto * m.menge, 0)
-    );
-  }, 0);
-  return ma + mat + tl;
-}

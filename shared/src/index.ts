@@ -302,6 +302,11 @@ export interface LogEntry {
   entity_id: string | null;
   message: string;
   metadata: Record<string, unknown> | null;
+  /** Urheber der Aktion (Multi-User). Beide Felder null bei Aktionen
+   *  ohne Request-Kontext (z.B. Cron-Backup). user_name ist denormalisiert,
+   *  bleibt lesbar auch nach Benutzer-Löschung. */
+  user_id: string | null;
+  user_name: string | null;
 }
 
 // === HTTP Responses (geteilt zwischen Client/Server) ===
@@ -316,6 +321,24 @@ export interface HealthResponse {
 export interface AuthStatusResponse {
   needsSetup: boolean;
   authenticated: boolean;
+  lockedUntil: string | null;
+  /** Identität des aktuell eingeloggten Benutzers (null wenn nicht
+   *  authentifiziert oder needsSetup). */
+  user: { id: string; name: string } | null;
+  /** Liste der wählbaren Benutzer für den Login-Screen. Leer wenn
+   *  needsSetup=true. */
+  benutzer: { id: string; name: string }[];
+}
+
+/** Benutzer-Stammsatz für die Multi-User-Verwaltung. Phase „Identity
+ *  Lite": keine Rollen, keine Permissions — alle haben Vollzugriff. */
+export interface Benutzer {
+  id: string;
+  name: string;
+  erstellt_am: string;
+  /** Anzahl fehlgeschlagener Login-Versuche seit letztem Erfolg */
+  failedAttempts: number;
+  /** Falls gesperrt: bis wann (ISO datetime) */
   lockedUntil: string | null;
 }
 

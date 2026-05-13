@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ApiError, apiClient } from '@/lib/api';
-import { AUTH_STATUS_QUERY_KEY } from '@/hooks/useAuthStatus';
+import { AUTH_STATUS_QUERY_KEY, useCurrentUser } from '@/hooks/useAuthStatus';
 import { useConfig } from '@/hooks/useConfig';
 import { FirmaForm } from '@/components/settings/FirmaForm';
 import { ThemeSection } from '@/components/settings/ThemeSection';
@@ -21,6 +21,7 @@ import { StufenSection } from '@/components/settings/StufenSection';
 import { PauschalenSection } from '@/components/settings/PauschalenSection';
 import { LexofficeSection } from '@/components/settings/LexofficeSection';
 import { LexofficeRechnungSection } from '@/components/settings/LexofficeRechnungSection';
+import { BenutzerSection } from '@/components/settings/BenutzerSection';
 import { GmailSection } from '@/components/settings/GmailSection';
 import { VorlagenSection } from '@/components/settings/VorlagenSection';
 import { ChecklistenSection } from '@/components/settings/ChecklistenSection';
@@ -29,6 +30,7 @@ import { PushSection } from '@/components/settings/PushSection';
 
 export function SettingsPage() {
   const { data: config, isLoading } = useConfig();
+  const me = useCurrentUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -47,7 +49,12 @@ export function SettingsPage() {
     <>
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center gap-2 p-4">
-          <h1 className="text-lg font-semibold">Einstellungen</h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">Einstellungen</h1>
+            {me && (
+              <p className="text-xs text-muted-foreground">Eingeloggt als {me.name}</p>
+            )}
+          </div>
         </div>
       </header>
 
@@ -240,6 +247,20 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent>
             <ThemeSection />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Benutzer</CardTitle>
+            <CardDescription>
+              Mehrere Inhaber möglich. Jeder hat eigenen PIN, gleiche PINs
+              sind erlaubt — beim Login wird vorher die Person gewählt.
+              Im Aktionsprotokoll wird der Urheber gespeichert.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BenutzerSection />
           </CardContent>
         </Card>
 

@@ -8,7 +8,6 @@ interface AuftragStats {
   draft: number;
   abgeschickt: number;
   byTyp: { arbeitszettel: number; angebot: number; lieferschein: number };
-  netto: { gesamt: number; heute: number; woche: number; monat: number };
   count: { heute: number; woche: number; monat: number };
 }
 
@@ -33,10 +32,10 @@ export function StatistikPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <KPI label="Heute" count={data.count.heute} netto={data.netto.heute} />
-              <KPI label="Diese Woche" count={data.count.woche} netto={data.netto.woche} />
-              <KPI label="Dieser Monat" count={data.count.monat} netto={data.netto.monat} />
-              <KPI label="Gesamt" count={data.total} netto={data.netto.gesamt} />
+              <KPI label="Heute" count={data.count.heute} />
+              <KPI label="Diese Woche" count={data.count.woche} />
+              <KPI label="Dieser Monat" count={data.count.monat} />
+              <KPI label="Gesamt" count={data.total} />
             </div>
 
             <Card>
@@ -83,14 +82,14 @@ export function StatistikPage() {
   );
 }
 
-function KPI({ label, count, netto }: { label: string; count: number; netto: number }) {
+function KPI({ label, count }: { label: string; count: number }) {
   return (
     <Card>
       <CardContent className="p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="mt-1 text-2xl font-bold">{count}</p>
         <p className="text-xs text-muted-foreground">
-          {netto.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+          {count === 1 ? 'Auftrag' : 'Aufträge'}
         </p>
       </CardContent>
     </Card>

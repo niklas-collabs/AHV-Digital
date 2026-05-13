@@ -14,6 +14,7 @@ import { anlageRouter } from './routes/anlage.js';
 import { auftragRouter } from './routes/auftrag.js';
 import { authRouter } from './routes/auth.js';
 import { backupRouter } from './routes/backup.js';
+import { benutzerRouter } from './routes/benutzer.js';
 import { checklisteRouter } from './routes/checkliste.js';
 import { configRouter } from './routes/config.js';
 import { kundeRouter } from './routes/kunde.js';
@@ -111,6 +112,7 @@ app.use('/api/auth', authRouter);
 // === Geschuetzte Routen — alles unter /api ab hier braucht Auth ===
 app.use('/api', requireAuth);
 
+app.use('/api/benutzer', benutzerRouter);
 app.use('/api/config', configRouter);
 app.use('/api/logo', logoRouter);
 app.use('/api/stufen', stufeRouter);
