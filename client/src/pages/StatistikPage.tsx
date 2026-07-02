@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ClipboardList, FileText, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api';
 
 interface AuftragStats {
@@ -28,7 +29,15 @@ export function StatistikPage() {
 
       <main className="mx-auto max-w-3xl space-y-4 p-4">
         {isLoading || !data ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20" />
+              ))}
+            </div>
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

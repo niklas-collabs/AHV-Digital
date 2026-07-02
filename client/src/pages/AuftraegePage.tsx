@@ -24,6 +24,8 @@ import {
   useDuplicateAuftrag,
 } from '@/hooks/useAuftraege';
 import { VorlageListDialog } from '@/components/auftrag/VorlageListDialog';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 type DateFilter = 'alle' | 'heute' | 'woche' | 'monat';
@@ -130,7 +132,7 @@ export function AuftraegePage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <ListSkeleton />
         ) : auftraege.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-12 text-center">
             <p className="text-sm text-muted-foreground">
@@ -156,13 +158,18 @@ export function AuftraegePage() {
                     },
                   );
                 }}
-                onDelete={() => {
-                  if (confirm(`"${a.titel || '(ohne Titel)'}" wirklich löschen?`)) {
-                    remove.mutate(a.id, {
-                      onError: (err) =>
-                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
-                    });
-                  }
+                onDelete={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Auftrag löschen?',
+                    description: `„${a.titel || '(ohne Titel)'}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
+                  remove.mutate(a.id, {
+                    onError: (err) =>
+                      toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                  });
                 }}
               />
             ))}

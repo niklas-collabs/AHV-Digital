@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useConfig, useDeleteConfig } from '@/hooks/useConfig';
 import { useMailStatus, useSetGmailConfig, useTestMail } from '@/hooks/useGmail';
 
@@ -48,8 +49,14 @@ export function GmailSection() {
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm('Gmail-Konfiguration wirklich entfernen?')) return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog({
+      title: 'Gmail-Konfiguration entfernen?',
+      description: 'E-Mail-Versand ist danach nicht mehr möglich.',
+      confirmLabel: 'Entfernen',
+      destructive: true,
+    });
+    if (!ok) return;
     deleteGmail.mutate(undefined, {
       onSuccess: () => {
         toast.success('Gmail-Konfiguration entfernt');

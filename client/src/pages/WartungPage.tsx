@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import type { Wartungsplan } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import {
   useDeleteWartungsplan,
   useWartungsplaene,
@@ -114,7 +116,7 @@ export function WartungPage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <ListSkeleton />
         ) : filtered.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-12 text-center">
             <p className="text-sm text-muted-foreground">
@@ -131,17 +133,18 @@ export function WartungPage() {
                 plan={p}
                 onEdit={() => setEditing(p)}
                 onErledigt={() => setErledigt(p)}
-                onDelete={() => {
-                  if (
-                    confirm(
-                      `"${p.anlage}" wirklich löschen? (Historie wird auch gelöscht)`,
-                    )
-                  ) {
-                    remove.mutate(p.id, {
-                      onError: (err) =>
-                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
-                    });
-                  }
+                onDelete={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Wartungsplan löschen?',
+                    description: `„${p.anlage}“ wird inklusive Historie endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
+                  remove.mutate(p.id, {
+                    onError: (err) =>
+                      toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                  });
                 }}
               />
             ))}

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Calendar,
   Download,
+  Loader2,
   MapPin,
   Pencil,
   Plus,
@@ -41,7 +42,7 @@ export function AnlageDetailPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted-foreground">Lädt …</p>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }

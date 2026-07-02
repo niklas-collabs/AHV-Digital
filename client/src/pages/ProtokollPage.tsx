@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { LogEntry } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api';
 
 const ACTION_LABEL: Record<string, string> = {
@@ -50,7 +51,7 @@ export function ProtokollPage() {
 
       <main className="mx-auto max-w-3xl p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <ListSkeleton />
         ) : list.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Noch keine Einträge im Protokoll.

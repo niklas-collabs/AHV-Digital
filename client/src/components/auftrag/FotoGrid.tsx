@@ -3,6 +3,7 @@ import { Camera, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useDeleteFoto, useUploadFoto } from '@/hooks/useAuftragFotos';
 import { cn } from '@/lib/utils';
 import { FotoEditor } from './FotoEditor';
@@ -59,8 +60,13 @@ export function FotoGrid({ auftragId, fotos, disabled }: FotoGridProps) {
     }
   }
 
-  const handleRemove = (filename: string) => {
-    if (!confirm('Foto wirklich löschen?')) return;
+  const handleRemove = async (filename: string) => {
+    const ok = await confirmDialog({
+      title: 'Foto löschen?',
+      confirmLabel: 'Löschen',
+      destructive: true,
+    });
+    if (!ok) return;
     remove.mutate(
       { auftragId, filename },
       {

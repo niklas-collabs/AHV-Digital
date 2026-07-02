@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import {
   type ChecklisteInput,
   useChecklisten,
@@ -67,8 +68,14 @@ export function ChecklistenSection() {
                 size="icon"
                 variant="ghost"
                 disabled={remove.isPending}
-                onClick={() => {
-                  if (!confirm(`Checkliste "${c.name}" wirklich löschen?`)) return;
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Checkliste löschen?',
+                    description: `„${c.name}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   remove.mutate(c.id, {
                     onError: (err) =>
                       toast.error(err instanceof ApiError ? err.message : 'Fehler'),

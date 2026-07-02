@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import {
   type StufeInput,
   useCreateStufe,
@@ -96,13 +97,18 @@ export function StufenSection() {
                 type="button"
                 size="icon"
                 variant="ghost"
-                onClick={() => {
-                  if (confirm(`"${s.bezeichnung}" wirklich löschen?`)) {
-                    remove.mutate(s.id, {
-                      onError: (err) =>
-                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
-                    });
-                  }
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Stufe löschen?',
+                    description: `„${s.bezeichnung}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
+                  remove.mutate(s.id, {
+                    onError: (err) =>
+                      toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                  });
                 }}
                 aria-label="Löschen"
               >

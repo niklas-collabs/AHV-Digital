@@ -19,6 +19,7 @@ export function useWartungsplaene() {
   return useQuery({
     queryKey: [WARTUNG_QUERY_KEY],
     queryFn: () => apiClient<Wartungsplan[]>('/api/wartung'),
+    placeholderData: (prev) => prev,
   });
 }
 

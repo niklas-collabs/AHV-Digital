@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useCurrentUser } from '@/hooks/useAuthStatus';
 import {
   useBenutzer,
@@ -68,15 +69,16 @@ export function BenutzerSection() {
                 size="icon"
                 variant="ghost"
                 disabled={remove.isPending || list.length <= 1}
-                onClick={() => {
-                  if (
-                    !confirm(
-                      `Benutzer "${b.name}" wirklich entfernen?${
-                        isMe ? ' Du wirst danach ausgeloggt.' : ''
-                      }`,
-                    )
-                  )
-                    return;
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Benutzer entfernen?',
+                    description: `„${b.name}“ wird entfernt.${
+                      isMe ? ' Du wirst danach ausgeloggt.' : ''
+                    }`,
+                    confirmLabel: 'Entfernen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   remove.mutate(b.id, {
                     onError: (err) =>
                       toast.error(err instanceof ApiError ? err.message : 'Fehler'),

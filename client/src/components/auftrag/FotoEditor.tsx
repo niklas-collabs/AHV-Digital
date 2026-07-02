@@ -3,6 +3,7 @@ import { Loader2, Save, Undo2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useReplaceFoto } from '@/hooks/useAuftragFotos';
 import { cn } from '@/lib/utils';
 
@@ -195,8 +196,15 @@ export function FotoEditor({ auftragId, filename, version, onClose, onSaved }: F
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => {
-            if (dirty && !confirm('Änderungen verwerfen?')) return;
+          onClick={async () => {
+            if (dirty) {
+              const ok = await confirmDialog({
+                title: 'Änderungen verwerfen?',
+                confirmLabel: 'Verwerfen',
+                destructive: true,
+              });
+              if (!ok) return;
+            }
             onClose();
           }}
           disabled={replace.isPending}

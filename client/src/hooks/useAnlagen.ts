@@ -16,6 +16,7 @@ export function useAnlagen() {
   return useQuery({
     queryKey: [ANLAGEN_QUERY_KEY],
     queryFn: () => apiClient<AnlageQr[]>('/api/anlagen'),
+    placeholderData: (prev) => prev,
   });
 }
 

@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import type { Teilleistung } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -90,8 +91,14 @@ export function TeilleistungenSection({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  if (confirm('Teilleistung wirklich entfernen?')) removeRow(t.id);
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Teilleistung entfernen?',
+                    description: `„${t.bezeichnung || '(ohne Bezeichnung)'}“ wird entfernt.`,
+                    confirmLabel: 'Entfernen',
+                    destructive: true,
+                  });
+                  if (ok) removeRow(t.id);
                 }}
                 disabled={disabled}
                 aria-label="Teilleistung entfernen"

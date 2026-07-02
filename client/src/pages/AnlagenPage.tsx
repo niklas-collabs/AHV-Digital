@@ -6,6 +6,8 @@ import type { AnlageQr } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
 import { useAnlagen, useDeleteAnlage } from '@/hooks/useAnlagen';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { AnlageDialog } from '@/components/anlage/AnlageDialog';
 
 export function AnlagenPage() {
@@ -34,7 +36,7 @@ export function AnlagenPage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <ListSkeleton />
         ) : list.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-12 text-center">
             <p className="text-sm text-muted-foreground">
@@ -49,8 +51,14 @@ export function AnlagenPage() {
               <AnlageRow
                 key={a.id}
                 anlage={a}
-                onDelete={() => {
-                  if (!confirm(`"${a.anlage}" wirklich löschen?`)) return;
+                onDelete={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Anlage löschen?',
+                    description: `„${a.anlage}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   remove.mutate(a.id, {
                     onError: (err) =>
                       toast.error(err instanceof ApiError ? err.message : 'Fehler'),

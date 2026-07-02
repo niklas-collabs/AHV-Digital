@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError } from '@/lib/api';
 import { useDeleteKunde, useKunden } from '@/hooks/useKunden';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { KundeFormDialog } from '@/components/kunden/KundeFormDialog';
 
 export function KundenPage() {
@@ -51,7 +53,7 @@ export function KundenPage() {
 
       <main className="mx-auto max-w-3xl space-y-2 p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Lädt …</p>
+          <ListSkeleton />
         ) : kunden.length === 0 ? (
           <EmptyState hasSearch={debouncedSearch.length > 0} />
         ) : (
@@ -61,18 +63,23 @@ export function KundenPage() {
                 key={k.id}
                 kunde={k}
                 onEdit={() => setEditing(k)}
-                onDelete={() => {
-                  if (confirm(`"${displayName(k)}" wirklich löschen?`)) {
-                    remove.mutate(k.id, {
-                      onError: (err) => {
-                        if (err instanceof ApiError && err.code === 'IN_USE') {
-                          toast.error(err.message);
-                        } else {
-                          toast.error(err instanceof ApiError ? err.message : 'Fehler');
-                        }
-                      },
-                    });
-                  }
+                onDelete={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Kunde löschen?',
+                    description: `„${displayName(k)}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
+                  remove.mutate(k.id, {
+                    onError: (err) => {
+                      if (err instanceof ApiError && err.code === 'IN_USE') {
+                        toast.error(err.message);
+                      } else {
+                        toast.error(err instanceof ApiError ? err.message : 'Fehler');
+                      }
+                    },
+                  });
                 }}
               />
             ))}

@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import {
   type PauschaleInput,
@@ -86,13 +87,18 @@ export function PauschalenSection() {
                 type="button"
                 size="icon"
                 variant="ghost"
-                onClick={() => {
-                  if (confirm(`"${p.name}" wirklich löschen?`)) {
-                    remove.mutate(p.id, {
-                      onError: (err) =>
-                        toast.error(err instanceof ApiError ? err.message : 'Fehler'),
-                    });
-                  }
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Pauschale löschen?',
+                    description: `„${p.name}“ wird endgültig gelöscht.`,
+                    confirmLabel: 'Löschen',
+                    destructive: true,
+                  });
+                  if (!ok) return;
+                  remove.mutate(p.id, {
+                    onError: (err) =>
+                      toast.error(err instanceof ApiError ? err.message : 'Fehler'),
+                  });
                 }}
                 aria-label="Löschen"
               >

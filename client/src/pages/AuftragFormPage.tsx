@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookmarkPlus, FileDown, MoreVertical, Send, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookmarkPlus,
+  FileDown,
+  Loader2,
+  MoreVertical,
+  Send,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type {
   Auftrag,
@@ -52,6 +60,7 @@ import { AuftragAktionenDialog } from '@/components/auftrag/AuftragAktionenDialo
 import { TeilleistungenSection } from '@/components/auftrag/TeilleistungenSection';
 import { ChecklisteSection } from '@/components/auftrag/ChecklisteSection';
 import { useAutosaveDraft } from '@/hooks/useAutosaveDraft';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 
 interface FormState {
   typ: AuftragTyp;
@@ -187,12 +196,19 @@ export function AuftragFormPage() {
       return;
     }
     const when = new Date(stored.savedAt).toLocaleString('de-DE');
-    if (confirm(`Es gibt einen lokal gespeicherten Entwurf vom ${when}. Übernehmen?`)) {
-      setState(stored.data);
-    } else {
-      clearDraft();
-    }
     setAutosaveOffered(true);
+    void confirmDialog({
+      title: 'Lokalen Entwurf übernehmen?',
+      description: `Es gibt einen lokal gespeicherten Entwurf vom ${when}.`,
+      confirmLabel: 'Übernehmen',
+      cancelLabel: 'Verwerfen',
+    }).then((ok) => {
+      if (ok) {
+        setState(stored.data);
+      } else {
+        clearDraft();
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, existing, autosaveOffered]);
 
@@ -233,10 +249,14 @@ export function AuftragFormPage() {
     abschicken.isPending ||
     remove.isPending;
 
+  // Hook MUSS vor dem bedingten Early-Return stehen (Rules of Hooks) —
+  // sonst crasht die Seite, sobald isLoading von true auf false wechselt.
+  const [showAbschickenDialog, setShowAbschickenDialog] = useState(false);
+
   if (isEdit && isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted-foreground">Lade …</p>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -247,8 +267,6 @@ export function AuftragFormPage() {
     if (!state.kunde_id) return 'Kunde ist Pflicht';
     return null;
   };
-
-  const [showAbschickenDialog, setShowAbschickenDialog] = useState(false);
 
   const handleSave = async () => {
     const err = validate();
@@ -310,9 +328,15 @@ export function AuftragFormPage() {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!existing) return;
-    if (!confirm(`"${existing.titel || '(ohne Titel)'}" wirklich löschen?`)) return;
+    const ok = await confirmDialog({
+      title: 'Auftrag löschen?',
+      description: `„${existing.titel || '(ohne Titel)'}“ wird endgültig gelöscht.`,
+      confirmLabel: 'Löschen',
+      destructive: true,
+    });
+    if (!ok) return;
     remove.mutate(existing.id, {
       onSuccess: () => {
         clearDraft();

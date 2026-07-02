@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import {
   useDeleteLexofficeApiKey,
   useLexofficeStatus,
@@ -44,8 +45,14 @@ export function LexofficeSection() {
     });
   };
 
-  const handleDeleteKey = () => {
-    if (!confirm('API-Key wirklich löschen? Sync ist danach nicht mehr möglich.')) return;
+  const handleDeleteKey = async () => {
+    const ok = await confirmDialog({
+      title: 'API-Key löschen?',
+      description: 'Sync mit Lexoffice ist danach nicht mehr möglich.',
+      confirmLabel: 'Löschen',
+      destructive: true,
+    });
+    if (!ok) return;
     deleteKey.mutate(undefined, {
       onSuccess: () => toast.success('API-Key entfernt'),
       onError: (err) =>
@@ -65,8 +72,13 @@ export function LexofficeSection() {
     });
   };
 
-  const handleSync = () => {
-    if (!confirm('Alle Lexoffice-Kunden in die App synchronisieren?')) return;
+  const handleSync = async () => {
+    const ok = await confirmDialog({
+      title: 'Lexoffice-Sync starten?',
+      description: 'Alle Lexoffice-Kunden werden in die App synchronisiert.',
+      confirmLabel: 'Synchronisieren',
+    });
+    if (!ok) return;
     sync.mutate(undefined, {
       onSuccess: (result) => {
         const parts = [

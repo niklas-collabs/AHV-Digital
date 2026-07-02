@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ChecklistenItem, ChecklistenVorlageTyp, AuftragTyp } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { confirmDialog } from '@/components/ui/confirm-dialog';
 import { useChecklisten } from '@/hooks/useChecklisten';
 import { useStableKeys } from '@/hooks/useStableKeys';
 
@@ -69,11 +70,15 @@ export function ChecklisteSection({
     setSelectedVorlage('');
   };
 
-  const clear = () => {
+  const clear = async () => {
     if (items.length === 0) return;
-    if (confirm('Komplette Checkliste leeren?')) {
-      onChange(null);
-    }
+    const ok = await confirmDialog({
+      title: 'Checkliste leeren?',
+      description: 'Alle Punkte werden entfernt.',
+      confirmLabel: 'Leeren',
+      destructive: true,
+    });
+    if (ok) onChange(null);
   };
 
   return (

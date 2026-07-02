@@ -1,25 +1,41 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { LoginPage } from '@/pages/LoginPage';
 import { SetupPage } from '@/pages/SetupPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { KundenPage } from '@/pages/KundenPage';
-import { KundeDetailPage } from '@/pages/KundeDetailPage';
-import { AuftraegePage } from '@/pages/AuftraegePage';
-import { AuftragFormPage } from '@/pages/AuftragFormPage';
-import { StatistikPage } from '@/pages/StatistikPage';
-import { WartungPage } from '@/pages/WartungPage';
-import { AnlagenPage } from '@/pages/AnlagenPage';
-import { AnlageDetailPage } from '@/pages/AnlageDetailPage';
-import { ProtokollPage } from '@/pages/ProtokollPage';
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { Toaster } from '@/components/ui/sonner';
+import { ConfirmDialogHost } from '@/components/ui/confirm-dialog';
 import { applyThemeToDocument, useThemeStore } from '@/stores/theme-store';
+
+// Code-Splitting: Jede Seite wird erst geladen, wenn sie aufgerufen wird.
+// Das hält den Initial-Bundle klein — wichtig auf dem Handy/Baustelle.
+const AuftraegePage = lazyPage(() => import('@/pages/AuftraegePage'), 'AuftraegePage');
+const AuftragFormPage = lazyPage(() => import('@/pages/AuftragFormPage'), 'AuftragFormPage');
+const KundenPage = lazyPage(() => import('@/pages/KundenPage'), 'KundenPage');
+const KundeDetailPage = lazyPage(() => import('@/pages/KundeDetailPage'), 'KundeDetailPage');
+const WartungPage = lazyPage(() => import('@/pages/WartungPage'), 'WartungPage');
+const AnlagenPage = lazyPage(() => import('@/pages/AnlagenPage'), 'AnlagenPage');
+const AnlageDetailPage = lazyPage(() => import('@/pages/AnlageDetailPage'), 'AnlageDetailPage');
+const StatistikPage = lazyPage(() => import('@/pages/StatistikPage'), 'StatistikPage');
+const ProtokollPage = lazyPage(() => import('@/pages/ProtokollPage'), 'ProtokollPage');
+const SettingsPage = lazyPage(() => import('@/pages/SettingsPage'), 'SettingsPage');
+
+// Hilfsfunktion: React.lazy erwartet einen default-Export, unsere Pages
+// nutzen named exports — hier wird umgemappt.
+function lazyPage<T extends Record<string, unknown>, K extends keyof T>(
+  loader: () => Promise<T>,
+  name: K,
+) {
+  return lazy(async () => {
+    const mod = await loader();
+    return { default: mod[name] as ComponentType };
+  });
+}
 
 export function App() {
   // Theme-Klasse auf <html> aktuell halten
@@ -30,34 +46,37 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/setup" element={<PublicGate kind="setup" />} />
-        <Route path="/login" element={<PublicGate kind="login" />} />
+      <Suspense fallback={<FullScreenLoader />}>
+        <Routes>
+          <Route path="/setup" element={<PublicGate kind="setup" />} />
+          <Route path="/login" element={<PublicGate kind="login" />} />
 
-        <Route element={<ProtectedGate />}>
-          {/* Top-Level-Seiten mit Bottom-Nav */}
-          <Route element={<AuthenticatedLayout />}>
-            <Route path="/" element={<Navigate to="/auftraege" replace />} />
-            <Route path="/auftraege" element={<AuftraegePage />} />
-            <Route path="/kunden" element={<KundenPage />} />
-            <Route path="/kunden/:id" element={<KundeDetailPage />} />
-            <Route path="/wartung" element={<WartungPage />} />
-            <Route path="/anlagen" element={<AnlagenPage />} />
-            <Route path="/anlagen/:id" element={<AnlageDetailPage />} />
-            <Route path="/qr/:id" element={<AnlageDetailPage />} />
-            <Route path="/statistik" element={<StatistikPage />} />
-            <Route path="/protokoll" element={<ProtokollPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+          <Route element={<ProtectedGate />}>
+            {/* Top-Level-Seiten mit Bottom-Nav */}
+            <Route element={<AuthenticatedLayout />}>
+              <Route path="/" element={<Navigate to="/auftraege" replace />} />
+              <Route path="/auftraege" element={<AuftraegePage />} />
+              <Route path="/kunden" element={<KundenPage />} />
+              <Route path="/kunden/:id" element={<KundeDetailPage />} />
+              <Route path="/wartung" element={<WartungPage />} />
+              <Route path="/anlagen" element={<AnlagenPage />} />
+              <Route path="/anlagen/:id" element={<AnlageDetailPage />} />
+              <Route path="/qr/:id" element={<AnlageDetailPage />} />
+              <Route path="/statistik" element={<StatistikPage />} />
+              <Route path="/protokoll" element={<ProtokollPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+
+            {/* Sub-Seiten ohne Bottom-Nav (Vollbild + eigene Action-Bar) */}
+            <Route path="/auftraege/neu" element={<AuftragFormPage />} />
+            <Route path="/auftraege/:id/edit" element={<AuftragFormPage />} />
           </Route>
 
-          {/* Sub-Seiten ohne Bottom-Nav (Vollbild + eigene Action-Bar) */}
-          <Route path="/auftraege/neu" element={<AuftragFormPage />} />
-          <Route path="/auftraege/:id/edit" element={<AuftragFormPage />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
       <Toaster />
+      <ConfirmDialogHost />
     </BrowserRouter>
   );
 }
