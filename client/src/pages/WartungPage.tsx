@@ -62,7 +62,7 @@ export function WartungPage() {
   const [erledigt, setErledigt] = useState<Wartungsplan | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('alle');
 
-  const list = data ?? [];
+  const list = useMemo(() => data ?? [], [data]);
   const filtered = useMemo(() => {
     if (filter === 'alle') return list;
     return list.filter((p) => statusOf(p) === filter);

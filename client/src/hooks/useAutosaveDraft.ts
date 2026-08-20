@@ -59,8 +59,6 @@ export function useAutosaveDraft<T>(
       }
     }, debounceMs);
     return () => clearTimeout(t);
-    // data ist intentional die einzige Trigger-Dependency
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, id, debounceMs, enabled]);
 
   // Alte Drafts beim Mount aufräumen

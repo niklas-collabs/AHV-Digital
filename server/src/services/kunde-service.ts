@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import type { Kunde, KundeTyp } from '@ahv/shared';
+import type { Kunde } from '@ahv/shared';
 
 export class KundeError extends Error {
   constructor(
@@ -44,7 +44,7 @@ const firmaSchema = z.object({
 export const kundeInputSchema = z.discriminatedUnion('typ', [privatSchema, firmaSchema]);
 export type KundeInput = z.infer<typeof kundeInputSchema>;
 
-interface KundeRow extends Kunde {}
+type KundeRow = Kunde;
 
 function rowToKunde(row: KundeRow): Kunde {
   return row;

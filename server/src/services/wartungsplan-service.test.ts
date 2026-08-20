@@ -11,7 +11,6 @@ import {
   createWartungsplan,
   deleteWartungsplan,
   erledigtInputSchema,
-  getWartungsplan,
   listHistorie,
   listWartungsplaene,
   markErledigt,

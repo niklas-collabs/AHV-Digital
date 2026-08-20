@@ -1,5 +1,4 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import path from 'node:path';
 import type Database from 'better-sqlite3';
 import type { Auftrag, FirmaConfig, GmailConfig } from '@ahv/shared';
 import { getConfig } from './config-service.js';
@@ -163,7 +162,6 @@ export async function sendAuftragMail(
   }
 
   const titel = auftrag.titel || `${TYP_LABEL[auftrag.typ]} ${auftrag.id.slice(0, 8)}`;
-  const datum = formatDate(auftrag.datum);
   const safeFilename =
     titel.replace(/[^a-zA-Z0-9-_äöüÄÖÜ ]/g, '').replace(/\s+/g, '_').slice(0, 60) || 'auftrag';
 

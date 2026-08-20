@@ -72,7 +72,7 @@ describe('stufe-service', () => {
 
   it('moveStufe up/down vertauscht Reihenfolge', () => {
     const db = makeDb();
-    const a = createStufe(db, { bezeichnung: 'A', stundenpreis: 10 });
+    createStufe(db, { bezeichnung: 'A', stundenpreis: 10 });
     const b = createStufe(db, { bezeichnung: 'B', stundenpreis: 20 });
     const c = createStufe(db, { bezeichnung: 'C', stundenpreis: 30 });
 

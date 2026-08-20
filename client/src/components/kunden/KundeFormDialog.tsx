@@ -3,7 +3,7 @@ import { useForm, type FieldError, type UseFormRegisterReturn } from 'react-hook
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import type { Kunde, KundeTyp } from '@ahv/shared';
+import type { Kunde } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

@@ -9,7 +9,7 @@ import {
   Search,
   User,
 } from 'lucide-react';
-import type { Auftrag, AuftragTyp, Kunde, Vorlage } from '@ahv/shared';
+import type { AuftragTyp } from '@ahv/shared';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuftraege } from '@/hooks/useAuftraege';

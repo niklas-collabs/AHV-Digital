@@ -18,6 +18,15 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Plain-JS-Skripte (z.B. server/scripts/) laufen unter Node
+    files: ['**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2022,

@@ -3,7 +3,6 @@ import { Building2, Plus, User, X } from 'lucide-react';
 import type { Kunde } from '@ahv/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useKunden } from '@/hooks/useKunden';
 import { KundeFormDialog } from '@/components/kunden/KundeFormDialog';
 
