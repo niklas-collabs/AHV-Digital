@@ -1,11 +1,11 @@
 # Render Blueprint für AHV-Digital
-# Phase 1.1: Free-Plan (zum Testen). Persistent Disk fehlt absichtlich,
-# wird in 1.2 zusammen mit dem Wechsel auf Starter ergänzt.
+# Starter-Plan mit Persistent Disk: SQLite-DB, Uploads (Fotos/Logo) und
+# Backups liegen unter /opt/render/project/src/data und überleben Deploys.
 services:
   - type: web
     name: ahv-digital
     runtime: node
-    plan: free
+    plan: starter
     region: frankfurt
     branch: main
     buildCommand: npm ci && npm run build
@@ -19,7 +19,12 @@ services:
       # bleiben dadurch ueber Deploys hinweg gueltig.
       - key: JWT_SECRET
         generateValue: true
-    # disk:
-    #   name: ahv-data
-    #   mountPath: /opt/render/project/src/data
-    #   sizeGB: 1
+      # Explizit auf den Disk-Mount zeigen. Uploads (Fotos/Logo) und Backups
+      # leiten sich im Server vom DB-Verzeichnis ab:
+      #   dirname(DB_PATH)/uploads  bzw.  dirname(DB_PATH)/backups
+      - key: DB_PATH
+        value: /opt/render/project/src/data/ahv.db
+    disk:
+      name: ahv-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
